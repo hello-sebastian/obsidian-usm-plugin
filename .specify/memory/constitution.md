@@ -9,8 +9,8 @@ Bump rationale: MINOR. Two new normative rules added to Principle III
   source with explanations, comments, logical division, semantic naming.
 
 Modified principles (titles unchanged, content expanded):
-  - III. Cykl życia, czyszczenie zasobów i jakość kodu
-    (added: Język dokumentacji i kodu + Czytelność kodu źródłowego)
+  - III. Lifecycle, resource cleanup, and code quality
+    (added: Language policy for documentation and code + Source code readability)
 
 Added sections:
   - None
@@ -24,72 +24,72 @@ Deferred TODOs:
 
 # Obsidian User Story Map Plugin Constitution
 
-Konstytucja dotyczy rozwoju, utrzymania i ewolucji wtyczki **Obsidian User Story Map**, dystrybuowanej jako wtyczka społecznościowa (Community Plugin) poprzez GitHub Releases oraz oficjalny katalog Obsidian. Dokument określa nadrzędne, niezmienne zasady architektoniczne, jakościowe i bezpieczeństwa.
+This constitution governs the development, maintenance, and evolution of the **Obsidian User Story Map** plugin, distributed as a Community Plugin via GitHub Releases and the official Obsidian catalog. The document defines the supreme, immutable architectural, quality, and security principles.
 
 ## Core Principles
 
-### I. Zgodność z ekosystemem Obsidian i architekturą widoku
+### I. Compliance with the Obsidian ecosystem and view architecture
 
-- Wtyczka musi ściśle przestrzegać oficjalnych wytycznych Obsidian API oraz zasad publikacji w katalogu Community Plugins.
-- Projekt zakłada bezobsługową instalację i aktualizację poprzez natywny mechanizm Obsidian oparty na wykazie wydań (GitHub Releases), semantycznym wersjonowaniu (SemVer) oraz plikach `manifest.json` i `versions.json`.
-- Wtyczka musi wspierać wieloplatformowość (Desktop oraz Mobile). Zabronione jest bezpośrednie odwoływanie się do modułów Node.js / Electron (np. `fs`, `path`), chyba że wtyczka zostanie jawnie oznaczona jako `"isDesktopOnly": true` w `manifest.json`.
-- Wszystkie operacje na systemie plików i strukturze notatek muszą odbywać się wyłącznie poprzez oficjalną abstrakcję Vault API (`this.app.vault` / `this.app.vault.adapter`).
-- **Dwutrybowość widoku (View Architecture):** Wtyczka musi dostarczać bezszwowy mechanizm przełączania się między widokiem surowego pliku Markdown (plikiem źródłowym tablicy zawierającym odnośniki do notatek) a dedykowanym wizualnym widokiem mapy, gwarantując pełną integralność danych i brak ryzyka uszkodzenia pliku źródłowego.
-- Interfejs musi wykorzystywać natywne komponenty Obsidian API (`Modal`, `Notice`, `SettingTab`, `ItemView`, `Menu`) oraz zmienne stylów CSS (Obsidian CSS Variables), zapewniając płynną adaptację do motywów jasnych i ciemnych.
+- The plugin MUST strictly adhere to the official Obsidian API guidelines and the Community Plugins catalog publishing rules.
+- The project assumes maintenance-free installation and updates through Obsidian's native mechanism based on the release listing (GitHub Releases), semantic versioning (SemVer), and the `manifest.json` and `versions.json` files.
+- The plugin MUST support multiplatform operation (Desktop and Mobile). Direct references to Node.js / Electron modules (e.g., `fs`, `path`) are forbidden, unless the plugin is explicitly marked as `"isDesktopOnly": true` in `manifest.json`.
+- All file-system and note-structure operations MUST be performed exclusively through the official Vault API abstraction (`this.app.vault` / `this.app.vault.adapter`).
+- **Dual-mode view (View Architecture):** The plugin MUST provide a seamless mechanism for switching between the raw Markdown file view (the board source file containing links to notes) and the dedicated visual map view, guaranteeing full data integrity and no risk of corrupting the source file.
+- The interface MUST use native Obsidian API components (`Modal`, `Notice`, `SettingTab`, `ItemView`, `Menu`) and CSS style variables (Obsidian CSS Variables), ensuring smooth adaptation to light and dark themes.
 
-### II. Bezpieczeństwo, prywatność i ochrona danych użytkownika
+### II. Security, privacy, and user data protection
 
-- **Lokalność i prywatność:** Treść krypty (Vault) oraz metadane notatek są traktowane jako ściśle poufne. Wtyczka działa w 100% lokalnie. Zabronione jest wysyłanie telemetrii, statystyk czy zawartości notatek do zewnętrznych serwerów.
-- **Zakaz dynamicznego wykonywania kodu:** Niedozwolone jest stosowanie `eval()`, `Function()`, czy pobieranie i uruchamianie zewnętrznego kodu JavaScript w czasie działania wtyczki. Cały kod wykonywalny musi znajdować się w skompilowanym pliku `main.js`.
-- **Bezpieczny podgląd i sanityzacja (XSS Prevention):** Wszelkie treści wyciągane z notatek i renderowane w interfejsie DOM muszą podlegać rygorystycznej sanityzacji, aby uniemożliwić wykonanie niebezpiecznego kodu HTML/JS.
-- **Nieniszczące operacje na plikach:** Zmiany wprowadzane w plikach notatek muszą być wykonywane defensywnie (np. poprzez `vault.process()`), zapobiegając utracie danych przy ewentualnych konfliktach zapisu.
+- **Locality and privacy:** The vault content and note metadata are treated as strictly confidential. The plugin operates 100% locally. Sending telemetry, statistics, or note content to external servers is forbidden.
+- **Prohibition of dynamic code execution:** The use of `eval()`, `Function()`, or fetching and running external JavaScript code during the plugin's operation is not allowed. All executable code MUST reside in the compiled `main.js` file.
+- **Safe preview and sanitization (XSS Prevention):** All content extracted from notes and rendered in the DOM interface MUST undergo rigorous sanitization to prevent the execution of dangerous HTML/JS code.
+- **Non-destructive file operations:** Changes made to note files MUST be performed defensively (e.g., via `vault.process()`), preventing data loss in the event of write conflicts.
 
-### III. Cykl życia, czyszczenie zasobów i jakość kodu
+### III. Lifecycle, resource cleanup, and code quality
 
-- **Ścisłe zarządzanie cyklem życia (`onload` / `onunload`):** Wyłączenie wtyczki musi całkowicie czyścić środowisko. Wszystkie zdarzenia (`registerEvent`), interwały (`registerInterval`), nasłuchiwacze DOM (`registerDomEvent`) oraz komendy muszą być rejestrowane przez metody pomocnicze API Obsidianu.
-- **TypeScript i typowanie:** Cały kod aplikacyjny tworzony jest w TypeScript z włączonym trybem ścisłym (`strict: true`). Należy bezwzględnie unikać stosowania typu `any`. Modele metadanych oraz stany wizualizacji muszą posiadać jednoznaczne definicje typów.
-- **Pakowanie i optymalizacja:** Kod źródłowy jest budowany do jednego pliku produkcyjnego `main.js` (z wykorzystaniem `esbuild`), zapewniając minimalny rozmiar oraz natychmiastowy start wtyczki.
-- **Język dokumentacji i kodu (Language Policy):** Dokumentacja SpecKit, komentarze w kodzie źródłowym oraz proces myślenia agentów AI (chain-of-thought) MUSI być prowadzona w języku angielskim — w celu przyspieszenia działania agentów oraz zapewnienia czytelności dokumentacji dla międzynarodowej społeczności. Odpowiedzi agenta AI dla użytkownika w IDE mogą być w języku używanym przez użytkownika.
-- **Czytelność kodu źródłowego (Code Readability):** Kod źródłowy MUSI być czytelny i wygodny do zrozumienia dla człowieka. Wymagane jest: dodawanie objaśnień i komentarzy wyjaśniających intencję (nie tylko syntaksis), dzielenie kodu na logiczne, spójne części (moduły/funkcje), oraz semantyczne nazywanie zmiennych, funkcji i typów.
+- **Strict lifecycle management (`onload` / `onunload`):** Disabling the plugin MUST completely clean up the environment. All events (`registerEvent`), intervals (`registerInterval`), DOM listeners (`registerDomEvent`), and commands MUST be registered through the Obsidian API helper methods.
+- **TypeScript and typing:** All application code is written in TypeScript with strict mode enabled (`strict: true`). The use of the `any` type MUST be avoided at all costs. Metadata models and visualization states MUST have unambiguous type definitions.
+- **Bundling and optimization:** The source code is built into a single production `main.js` file (using `esbuild`), ensuring minimal size and instant plugin startup.
+- **Language policy for documentation and code (Language Policy):** SpecKit documentation, source code comments, and the reasoning process of AI agents (chain-of-thought) MUST be conducted in English — in order to speed up agent operation and ensure the readability of documentation for the international community. The AI agent's responses to the user in the IDE MAY be in the language used by the user.
+- **Source code readability (Code Readability):** The source code MUST be readable and easy for a human to understand. Required: adding explanations and comments that clarify intent (not just syntax), dividing the code into logical, coherent parts (modules/functions), and semantic naming of variables, functions, and types.
 
-### IV. UX/UI, ergonomia i obsługa danych niekompletnych
+### IV. UX/UI, ergonomics, and handling of incomplete data
 
-- **Look & Feel aplikacji Obsidian:** Interfejs wizualny mapy musi sprawiać wrażenie natywnego elementu programu. Komponenty korzystają ze zmiennych kolorystycznych Obsidianu (`var(--text-normal)`, `var(--background-primary)` itp.).
-- **Defensywne grupowanie (Unassigned & Fallback Bucketing):** Gdy notatka nie posiada określonych atrybutów hierarchii kolumnowej lub wierszowej, wtyczka nie może przerywać renderowania ani zgłaszać błędu. Brakujące metadane są traktowane jako puste wartości i automatycznie grupowane w dedykowanych sekcjach zastępczych (np. „Unassigned" / „Brak kategorii").
-- **Swoboda nawigacji w 2D:** Interfejs mapy musi umożliwiać płynne przewijanie zarówno w poziomie (dla rozbudowanych struktur kolumnowych), jak i w pionie (dla wielu wierszy/podziałów), zachowując czytelność na różnych rozmiarach ekranów.
-- **Zasada nienarzucania się:** Komunikaty błędów lub ostrzeżenia o niepoprawnej strukturze notatek powinny być wyświetlane w sposób nienachalny, unikając nadmiernego używania powiadomień `Notice`.
-- **Dostępność i dobre praktyki UX/UI:** Interfejs musi respektować powszechne dobre praktyki dostępności (wystarczający kontrast, nawigacja klawiaturą, czytelność) oraz w pełni respektować ustawienia skórek i motywów stylistycznych Obsidianu, nie narzucając sztywnych wartości kolorystycznych tam, gdzie Obsidian udostępnia zmienne stylów.
+- **Obsidian application Look & Feel:** The visual interface of the map MUST feel like a native element of the application. Components use Obsidian's color variables (`var(--text-normal)`, `var(--background-primary)`, etc.).
+- **Defensive grouping (Unassigned & Fallback Bucketing):** When a note lacks the defined column or row hierarchy attributes, the plugin MUST NOT interrupt rendering or report an error. Missing metadata is treated as empty values and automatically grouped into dedicated placeholder sections (e.g., "Unassigned" / "No category").
+- **Freedom of 2D navigation:** The map interface MUST enable smooth scrolling both horizontally (for elaborate column structures) and vertically (for many rows/divisions), maintaining readability across different screen sizes.
+- **Non-intrusiveness principle:** Error messages or warnings about invalid note structure SHOULD be displayed in a non-intrusive way, avoiding excessive use of `Notice` notifications.
+- **Accessibility and UX/UI best practices:** The interface MUST respect common accessibility best practices (sufficient contrast, keyboard navigation, readability) and fully respect Obsidian's theme and style settings, not imposing hard color values where Obsidian provides style variables.
 
-### V. Wydajność, reaktywność i obsługa dużych krypt
+### V. Performance, reactivity, and handling of large vaults
 
-- **Wykorzystanie `metadataCache`:** Niedozwolone jest synchroniczne odczytywanie plików z dysku w celu zbudowania struktury mapy. Pobieranie linków oraz atrybutów z frontmattera musi odbywać się wyłącznie za pośrednictwem szybkiej pamięci podręcznej Obsidianu (`app.metadataCache`).
-- **Reaktywność na zdarzenia (Event-Driven Architecture):** Mapa musi automatycznie aktualizować swój stan w odpowiedzi na zmiany w plikach źródłowych lub plikach połączonych, nasłuchując zdarzeń `metadataCache` oraz `vault`. Zmiany muszą być filtrowane i ograniczane częstotliwościowo (z użyciem `debounce`/`throttle`).
-- **Wydajność układu siatki (Layout Performance):** Renderowanie dwuwymiarowej mapy musi opierać się na natywnych mechanizmach układu przeglądarki (CSS Grid, Flexbox, `overflow: auto`), minimalizując ręczne obliczenia geometrii w JavaScript.
+- **Use of `metadataCache`:** Synchronously reading files from disk in order to build the map structure is not allowed. Fetching links and frontmatter attributes MUST be done exclusively through Obsidian's fast in-memory cache (`app.metadataCache`).
+- **Event-driven reactivity (Event-Driven Architecture):** The map MUST automatically update its state in response to changes in source files or linked files, listening to `metadataCache` and `vault` events. Changes MUST be filtered and rate-limited (using `debounce`/`throttle`).
+- **Grid layout performance (Layout Performance):** Rendering the two-dimensional map MUST rely on native browser layout mechanisms (CSS Grid, Flexbox, `overflow: auto`), minimizing manual geometry calculations in JavaScript.
 
-### VI. Portowalność danych i samoopisująca się konfiguracja
+### VI. Data portability and self-describing configuration
 
-- **Samoopisujący się plik tablicy:** Ogólne ustawienia tablicy (w tym kolejność wierszy, sortowanie, interpretacja relacji między historiami) MUSI być przechowywane jako atrybuty w nagłówku (frontmatter) pliku tablicy. Plik tablicy przechowuje ustawienia poziomu tablicy; atrybuty poziomu poszczególnych historii (np. priorytet, status) są przechowywane w nagłówkach samych notatek historii. Plik tablicy nie jest magazynem wszystkich danych (nie jest plikiem CSV) — jest samoopisującym się wskaźnikiem struktury i ogólnych ustawień mapy.
-- **Portowalność i przenośność:** Plik tablicy MUSI być w pełni przenośny — konfiguracja przetrwa synchronizację, kopiowanie i przenoszenie między kryptami (vaults) oraz między urządzeniami, niezależnie od tego, czy wtyczka jest zainstalowana, odinstalowana, czy zaktualniona.
-- **Czytelność bez wtyczki:** Plik tablicy MUSI pozostać czytelnym i interpretowalnym przez użytkownika lub agenta AI, który nie ma dostępu do wtyczki, a jedynie do czystych notatek Markdown. Odbiorca musi móc rozpoznać kolejność historii i wydań, sposób interpretacji treści oraz relacje między nimi wyłącznie na podstawie zawartości pliku.
-- **Odtwarzalność po reinstalacji:** Ponowna instalacja wtyczki MUSI odtworzyć widok mapy identycznie jak przed odinstalowaniem — żadne dane, konfiguracja ani struktura nie mogą zostać zgubione w cyklu instalacja → odinstalacja → reinstalacja.
+- **Self-describing board file:** General board settings (including row order, sorting, and the interpretation of relationships between stories) MUST be stored as attributes in the board file's header (frontmatter). The board file stores board-level settings; individual story-level attributes (e.g., priority, status) are stored in the headers of the story notes themselves. The board file is not a repository of all data (it is not a CSV file) — it is a self-describing indicator of the structure and general settings of the map.
+- **Portability and transferability:** The board file MUST be fully portable — the configuration survives synchronization, copying, and transfer between vaults and between devices, regardless of whether the plugin is installed, uninstalled, or updated.
+- **Readability without the plugin:** The board file MUST remain readable and interpretable by a user or an AI agent that has no access to the plugin, only to plain Markdown notes. The reader MUST be able to recognize the order of stories and releases, the way the content is interpreted, and the relationships between them based solely on the file's content.
+- **Reproducibility after reinstallation:** Reinstalling the plugin MUST reproduce the map view identically to before uninstallation — no data, configuration, or structure may be lost in the install → uninstall → reinstall cycle.
 
-## Dodatkowe wymagania i ograniczenia
+## Additional requirements and constraints
 
-- **Minimalizacja zależności:** Projekt unika przeładowania pliku `package.json`. Zewnętrzne biblioteki NPM są dodawane tylko wtedy, gdy ich funkcjonalność nie może być łatwo zaimplementowana natywnie lub za pomocą Obsidian API.
-- **Zgodność licencyjna zależności:** Każda zewnętrzna zależność musi posiadać licencję otwartoźródłową zgodną z licencją projektu określoną w pliku `LICENSE`. Zabronione jest włączanie zależności o licencjach konfliktowych bez jawnego uzasadnienia i akceptacji.
-- **Jakość dokumentacji:** Repozytorium musi zawierać plik `README.md` ze zrzutami ekranu i instrukcją obsługi, a także plik `CHANGELOG.md` rejestrujący zmiany w kolejnych wersjach.
-- **Przyjazność dla społeczności:** Projekt jest otwarty na zgłoszenia błędów (Issues) i propozycje zmian (Pull Requests).
+- **Minimization of dependencies:** The project avoids overloading the `package.json` file. External NPM libraries are added only when their functionality cannot be easily implemented natively or with the Obsidian API.
+- **License compatibility of dependencies:** Every external dependency MUST have an open-source license compatible with the project license defined in the `LICENSE` file. Including dependencies with conflicting licenses is forbidden without explicit justification and acceptance.
+- **Documentation quality:** The repository MUST contain a `README.md` file with screenshots and usage instructions, as well as a `CHANGELOG.md` file recording changes across versions.
+- **Community friendliness:** The project is open to bug reports (Issues) and change proposals (Pull Requests).
 
-## Workflow rozwojowy i jakość
+## Development workflow and quality
 
-- **Weryfikacja lokalna:** Przed utworzeniem wydania wtyczka musi zostać przetestowana na czystej instancji Obsidian w środowisku Desktop oraz Mobile.
-- **Proces wydań:** Każde wydanie produkcyjne generuje tag w Git (zgodny z SemVer), a automatyczny lub ręczny pipeline dołącza do wydania w GitHub Releases pliki: `manifest.json`, `main.js` oraz `styles.css`.
-- **Trwałość ID:** Identyfikator wtyczki (`id` w `manifest.json`) raz ustalony nie może zostać zmieniony.
+- **Local verification:** Before creating a release, the plugin MUST be tested on a clean Obsidian instance in both the Desktop and Mobile environments.
+- **Release process:** Every production release generates a Git tag (compliant with SemVer), and an automated or manual pipeline attaches the following files to the GitHub Release: `manifest.json`, `main.js`, and `styles.css`.
+- **ID persistence:** The plugin identifier (`id` in `manifest.json`) MUST NOT be changed once established.
 
 ## Governance
 
-- Niniejsza konstytucja stanowi nadrzędny dokument architektoniczny projektu.
-- Zmiany konstytucji wymagają uzasadnienia wynikającego ze zmian w Obsidian API, wymogów bezpieczeństwa lub istotnych potrzeb użytkowników.
-- Przegląd zgodności z konstytucją jest obowiązkowym punktem przy akceptacji PR oraz przed wypuszczeniem każdej wersji produkcyjnej.
+- This constitution is the supreme architectural document of the project.
+- Changes to the constitution require justification arising from changes in the Obsidian API, security requirements, or significant user needs.
+- A constitution compliance review is a mandatory checkpoint when accepting a PR and before releasing any production version.
 
 **Version**: 1.3.0 | **Ratified**: 2026-10-14 | **Last Amended**: 2026-10-15

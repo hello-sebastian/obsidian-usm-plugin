@@ -90,4 +90,3 @@ src/
 ## Complexity Tracking
 
 > No Constitution Check violations — this section is not applicable.
-| [e.g., Repository pattern] | [specific problem] | [why direct DB access insufficient] |

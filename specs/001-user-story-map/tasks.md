@@ -9,7 +9,7 @@ description: "Task list for User Story Map Board View"
 
 **Prerequisites**: plan.md (required), spec.md (required for user stories), research.md, data-model.md, contracts/
 
-**Tests**: Not included — the feature specification defers automated/performance tests to later iterations ("testy wydajności zostaną dodane później"); validation is manual via `quickstart.md` scenarios (plan.md: Testing).
+**Tests**: Not included — the feature specification defers automated/performance tests to later iterations ("performance tests will be added later"); validation is manual via `quickstart.md` scenarios (plan.md: Testing).
 
 **Organization**: Tasks are grouped by user story to enable independent implementation and testing of each story.
 
@@ -30,7 +30,7 @@ description: "Task list for User Story Map Board View"
 **Purpose**: Project initialization and basic structure
 
 - [ ] T001 Create source directory structure per plan.md in `src/`: `src/board/`, `src/story/`, `src/i18n/`, `src/debug/`, `src/utils/`
-- [ ] T002 Update plugin identity in `manifest.json` (set `id`, `name`, `description` for the User Story Map plugin, keep `isDesktopOnly: false`) and align `name`/`description` in `package.json`
+- [ ] T002 Update plugin identity in `manifest.json` (set `id` to `obsidian-usm-plugin` — matching the plugin folder name and permanent once released per the Constitution "ID persistence" rule; set `name` to "User Story Map" and a concise `description`, keep `isDesktopOnly: false`) and align `name`/`description` in `package.json`
 - [ ] T003 [P] Create the English label dictionary in `src/i18n/en.ts` — flat `Record<string, string>` keyed by semantic string IDs covering: "Unassigned" section label, command names ("Open as User Story Map", "Open as Markdown"), pane header icon tooltip, debug panel labels (fps, story count, render time); all user-facing strings MUST come from this dictionary (research R-09)
 - [ ] T004 [P] Implement the debounce utility in `src/utils/debounce.ts` — generic debounce function with cancel support, used to coalesce bursts of file-change events into a single re-render (research R-03)
 - [ ] T005 [P] Implement the sanitization utility in `src/utils/sanitize.ts` — HTML-escape function for note-derived strings; document that the primary XSS defense is text-node insertion (`setText`/`createEl`), with this escape as the fallback for any markup construction (research R-05, FR-016)
@@ -43,16 +43,16 @@ description: "Task list for User Story Map Board View"
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T006 Create shared TypeScript interfaces in `src/types.ts` per `data-model.md`: `BoardConfig` (`isBoard: boolean`, `releaseRowOrder: 'appearance' | 'alphabetical'`), `StoryAttributes` (activity/task/epic/release as `{ text: string; linkPath?: string } | null`), `StoryEntry` (`id`, `targetPath: string | null`, `linkText`, `attributes`, `title`, `isBroken`), `GridModel` (`activities: ColumnGroup[]`, `releases: string[]`, `cells: Map<string, StoryEntry[]>` with key format `${activityKey}::${taskKey}::${epicKey}::${releaseKey}`), `ColumnGroup`, `TaskGroup`; strict mode, no `any`
+- [ ] T006 Create shared TypeScript interfaces in `src/types.ts` per `data-model.md`: `BoardConfig` (`isBoard: boolean`, `releaseRowOrder: 'appearance' | 'alphabetical'`), `StoryAttributes` (activity/task/epic/release as `{ text: string; linkPath?: string } | null`), `StoryEntry` (`id`, `targetPath: string | null`, `linkText`, `attributes`, `title`, `isBroken`), `GridModel` (`activities: ColumnGroup[]`, `releases: string[]`, `cells: Map<string, StoryEntry[]>` with key format `${activityKey}::${taskKey}::${epicKey}::${releaseKey}`, `unassigned: { activity: boolean; task: boolean; epic: boolean; release: boolean }` — a per-level flag indicating whether an "Unassigned" section exists at that level), `ColumnGroup`, `TaskGroup`; strict mode, no `any`
 - [ ] T007 [P] Implement story attribute reading in `src/story/story-attributes.ts` — read frontmatter via `app.metadataCache.getFileCache()` only (no disk reads); case-insensitive PL/EN synonym matching per `contracts/story-file-format.md` (activity/aktywność, task/zadanie, epic/epik, release/wydanie/row, story, title); distinguish plain-text values from wikilink values (`{ text, linkPath? }`); resolve the title cascade: `Story` → `title` → first alias → file name without extension (FR-004, FR-009, FR-012); missing frontmatter → all attributes `null`
 - [ ] T008 [P] Implement board file parsing in `src/board/board-parser.ts` per `contracts/board-file-format.md` — detect `usm-board: true` flag (case-insensitive); read `usm-release-order` (`appearance` default, `alphabetical` optional, unknown values fall back to `appearance`); extract the ordered list of wikilinks from the body ignoring ALL non-wikilink lines (headers, text, comments, empty lines); resolve each wikilink to its target note path; preserve duplicates as separate `StoryEntry` occurrences in order of appearance; mark entries whose target does not exist as `isBroken: true` (FR-001, FR-003, FR-006, FR-018)
-- [ ] T009 Implement grid model building in `src/board/board-model.ts` — build `GridModel` from `BoardConfig` + `StoryEntry[]`: column hierarchy Activity → Task → Epic in order of first appearance across the board's story entries (FR-005); rows from Release values ordered per `releaseRowOrder` (FR-006); missing attribute at any level → reserved `UNASSIGNED` key at that level (FR-011); populate `cells` map; case-insensitive value comparison so `Login` and `login` group together (spec edge case)
+- [ ] T009 Implement grid model building in `src/board/board-model.ts` — build `GridModel` from `BoardConfig` + `StoryEntry[]`: column hierarchy Activity → Task → Epic in order of first appearance across the board's story entries (FR-005); rows from Release values ordered per `releaseRowOrder` (FR-006); missing attribute at any level → reserved `UNASSIGNED` key at that level (FR-011); populate `cells` map; set the `unassigned` per-level flags to `true` whenever the `UNASSIGNED` key is used at that level (so the renderer knows which "Unassigned" sections to draw); case-insensitive value comparison so `Login` and `login` group together (spec edge case)
 
 **Checkpoint**: Foundation ready — data pipeline (types → attributes → parser → model) complete; user story implementation can now begin
 
 ---
 
-## Phase 3: User Story 1 - Otwarcie notatki tablicy jako wizualnej mapy (Priority: P1) 🎯 MVP
+## Phase 3: User Story 1 - Opening a board note as a visual map (Priority: P1) 🎯 MVP
 
 **Goal**: A board note (`usm-board: true`) opens as a visual map; seamless toggle to raw Markdown and back without any content change.
 
@@ -68,7 +68,7 @@ description: "Task list for User Story Map Board View"
 
 ---
 
-## Phase 4: User Story 2 - Podgląd historii ułożonych w siatce 2D (Priority: P1)
+## Phase 4: User Story 2 - Preview of stories arranged in a 2D grid (Priority: P1)
 
 **Goal**: Stories are grouped into a 2D grid — columns Activity → Task → Epic (first-appearance order), rows per Release.
 
@@ -83,7 +83,7 @@ description: "Task list for User Story Map Board View"
 
 ---
 
-## Phase 5: User Story 3 - Karty historii z czytelnymi tytułami (Priority: P2)
+## Phase 5: User Story 3 - Story cards with readable titles (Priority: P2)
 
 **Goal**: Each story renders as a card with a cascading title (clamped to a few lines), a Release badge in the footer, and click-to-open behavior.
 
@@ -92,13 +92,13 @@ description: "Task list for User Story Map Board View"
 ### Implementation for User Story 3
 
 - [ ] T015 [P] [US3] Implement the story card component in `src/story/story-card.ts` — card DOM with header (title resolved via the cascade from `StoryEntry.title`, clamped to 2–3 lines using CSS `-webkit-line-clamp`) and footer (badge showing the Release value only — no status attribute in MVP, FR-010); click opens the linked note in the standard view (FR-019); keyboard accessible: `tabindex="0"`, `role="button"`, Enter/Space activation (Constitution Principle IV)
-- [ ] T016 [US3] Integrate the story card into the renderer in `src/board/board-renderer.ts` — replace the basic card from T011 with the `story-card.ts` component for every `StoryEntry` (depends on T015)
+- [ ] T016 [US3] Integrate the story card into the renderer in `src/board/board-renderer.ts` — replace the basic card from T011 with the `story-card.ts` component for every `StoryEntry` (depends on T015, and on T013 so the card is placed within the full 2D grid)
 
 **Checkpoint**: User Stories 1–3 all work independently — cards show correct titles, badges, and open notes on click
 
 ---
 
-## Phase 6: User Story 4 - Nawigacja po mapie w 2D (Priority: P2)
+## Phase 6: User Story 4 - Navigating the map in 2D (Priority: P2)
 
 **Goal**: Large maps scroll horizontally and vertically with column and row headers remaining visible.
 
@@ -112,7 +112,7 @@ description: "Task list for User Story Map Board View"
 
 ---
 
-## Phase 7: User Story 5 - Obsługa niekompletnych danych historii (Priority: P2)
+## Phase 7: User Story 5 - Handling incomplete story data (Priority: P2)
 
 **Goal**: Stories with missing attributes never break the map — they are grouped into "Unassigned" sections; broken links show placeholders.
 
@@ -126,7 +126,7 @@ description: "Task list for User Story Map Board View"
 
 ---
 
-## Phase 8: User Story 6 - Edycja wyłącznie w Markdown (mapa tylko do odczytu) (Priority: P3)
+## Phase 8: User Story 6 - Editing exclusively in Markdown (map is read-only) (Priority: P3)
 
 **Goal**: The map is read-only and automatically mirrors edits made in the Markdown source.
 
@@ -135,7 +135,7 @@ description: "Task list for User Story Map Board View"
 ### Implementation for User Story 6
 
 - [ ] T019 [US6] Implement event-driven live updates in `src/board/board-view.ts` — register `metadataCache.on('changed')` and `vault.on('modify')` via `this.registerEvent`; filter events to the board file and its linked story files; debounce with `src/utils/debounce.ts` so a burst of changes triggers a single model rebuild + re-render; update must complete within 2 seconds of the edit (FR-013, SC-005; research R-03)
-- [ ] T020 [US6] Enforce read-only behavior in `src/board/board-view.ts` and `src/board/board-renderer.ts` — no editing affordances on the map (no drag, no inline edit, no context-menu mutations); verify the board file and story files are never written by the plugin (FR-015, SC-004)
+- [ ] T020 [US6] Enforce read-only behavior in `src/board/board-view.ts` and `src/board/board-renderer.ts` — no editing affordances on the map (no drag, no inline edit, no context-menu mutations); verify the board file and story files are never written by the plugin, so that after the plugin is disabled the board note remains a readable, bulleted list of links in standard Markdown (FR-015, FR-017, SC-004)
 
 **Checkpoint**: All user stories independently functional — the map is a live, read-only projection of the Markdown source
 
@@ -150,7 +150,7 @@ description: "Task list for User Story Map Board View"
 - [ ] T023 [P] XSS hardening audit across `src/board/board-renderer.ts`, `src/story/story-card.ts`, and `src/board/board-view.ts` — verify every note-derived string (titles, attribute values, badges, link text) is inserted as a text node or escaped via `src/utils/sanitize.ts`; no `innerHTML` with note data anywhere (FR-016; quickstart Q8)
 - [ ] T024 [P] Complete the map styling in `styles.css` — use Obsidian CSS variables (`var(--text-normal)`, `var(--background-primary)`, etc.) for full light/dark theme adaptation, card styling, sticky-header offsets, and mobile-friendly sizing (Constitution Principles I, IV)
 - [ ] T025 Run the full validation suite from `specs/001-user-story-map/quickstart.md` — scenarios Q1–Q10 on Desktop and Q10 on at least one mobile device; fix any failures
-- [ ] T026 [P] Update `README.md` (usage instructions, board/story file format examples, screenshots placeholder) and create `CHANGELOG.md` with the initial release entry (Constitution: documentation quality)
+- [ ] T026 [P] Update `README.md` (usage instructions, board/story file format examples, and real screenshots of the map view — the Constitution requires a README with screenshots, so capture actual screenshots before release; do not ship a placeholder) and create `CHANGELOG.md` with the initial release entry (Constitution: documentation quality)
 
 ---
 
