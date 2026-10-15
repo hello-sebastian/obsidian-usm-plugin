@@ -1,19 +1,19 @@
 <!--
 Sync Impact Report (temporary scratch — REMOVE before committing this file)
 ============================================================================
-Version change: 1.0.0 → 1.1.0
-Bump rationale: MINOR. Two new normative rules added (materially expanded
-  guidance): (1) license compatibility of dependencies with the project
-  LICENSE, and (2) UX/UI/accessibility good practices while respecting
-  Obsidian theme/skin settings. No principles or sections removed or
-  redefined.
+Version change: 1.2.1 → 1.3.0
+Bump rationale: MINOR. Two new normative rules added to Principle III
+  (materially expanded guidance): (1) language policy — SpecKit docs,
+  code comments, and AI agent reasoning in English; user-facing IDE
+  responses may use user's language. (2) Code readability — human-readable
+  source with explanations, comments, logical division, semantic naming.
 
 Modified principles (titles unchanged, content expanded):
-  - IV. UX/UI, ergonomia i obsługa danych niekompletnych
-    (added: Dostępność i dobre praktyki UX/UI + respektowanie skórek/motywów)
+  - III. Cykl życia, czyszczenie zasobów i jakość kodu
+    (added: Język dokumentacji i kodu + Czytelność kodu źródłowego)
 
 Added sections:
-  - None (new rule added to existing "Dodatkowe wymagania i ograniczenia")
+  - None
 
 Removed sections:
   - None
@@ -49,6 +49,8 @@ Konstytucja dotyczy rozwoju, utrzymania i ewolucji wtyczki **Obsidian User Story
 - **Ścisłe zarządzanie cyklem życia (`onload` / `onunload`):** Wyłączenie wtyczki musi całkowicie czyścić środowisko. Wszystkie zdarzenia (`registerEvent`), interwały (`registerInterval`), nasłuchiwacze DOM (`registerDomEvent`) oraz komendy muszą być rejestrowane przez metody pomocnicze API Obsidianu.
 - **TypeScript i typowanie:** Cały kod aplikacyjny tworzony jest w TypeScript z włączonym trybem ścisłym (`strict: true`). Należy bezwzględnie unikać stosowania typu `any`. Modele metadanych oraz stany wizualizacji muszą posiadać jednoznaczne definicje typów.
 - **Pakowanie i optymalizacja:** Kod źródłowy jest budowany do jednego pliku produkcyjnego `main.js` (z wykorzystaniem `esbuild`), zapewniając minimalny rozmiar oraz natychmiastowy start wtyczki.
+- **Język dokumentacji i kodu (Language Policy):** Dokumentacja SpecKit, komentarze w kodzie źródłowym oraz proces myślenia agentów AI (chain-of-thought) MUSI być prowadzona w języku angielskim — w celu przyspieszenia działania agentów oraz zapewnienia czytelności dokumentacji dla międzynarodowej społeczności. Odpowiedzi agenta AI dla użytkownika w IDE mogą być w języku używanym przez użytkownika.
+- **Czytelność kodu źródłowego (Code Readability):** Kod źródłowy MUSI być czytelny i wygodny do zrozumienia dla człowieka. Wymagane jest: dodawanie objaśnień i komentarzy wyjaśniających intencję (nie tylko syntaksis), dzielenie kodu na logiczne, spójne części (moduły/funkcje), oraz semantyczne nazywanie zmiennych, funkcji i typów.
 
 ### IV. UX/UI, ergonomia i obsługa danych niekompletnych
 
@@ -63,6 +65,13 @@ Konstytucja dotyczy rozwoju, utrzymania i ewolucji wtyczki **Obsidian User Story
 - **Wykorzystanie `metadataCache`:** Niedozwolone jest synchroniczne odczytywanie plików z dysku w celu zbudowania struktury mapy. Pobieranie linków oraz atrybutów z frontmattera musi odbywać się wyłącznie za pośrednictwem szybkiej pamięci podręcznej Obsidianu (`app.metadataCache`).
 - **Reaktywność na zdarzenia (Event-Driven Architecture):** Mapa musi automatycznie aktualizować swój stan w odpowiedzi na zmiany w plikach źródłowych lub plikach połączonych, nasłuchując zdarzeń `metadataCache` oraz `vault`. Zmiany muszą być filtrowane i ograniczane częstotliwościowo (z użyciem `debounce`/`throttle`).
 - **Wydajność układu siatki (Layout Performance):** Renderowanie dwuwymiarowej mapy musi opierać się na natywnych mechanizmach układu przeglądarki (CSS Grid, Flexbox, `overflow: auto`), minimalizując ręczne obliczenia geometrii w JavaScript.
+
+### VI. Portowalność danych i samoopisująca się konfiguracja
+
+- **Samoopisujący się plik tablicy:** Ogólne ustawienia tablicy (w tym kolejność wierszy, sortowanie, interpretacja relacji między historiami) MUSI być przechowywane jako atrybuty w nagłówku (frontmatter) pliku tablicy. Plik tablicy przechowuje ustawienia poziomu tablicy; atrybuty poziomu poszczególnych historii (np. priorytet, status) są przechowywane w nagłówkach samych notatek historii. Plik tablicy nie jest magazynem wszystkich danych (nie jest plikiem CSV) — jest samoopisującym się wskaźnikiem struktury i ogólnych ustawień mapy.
+- **Portowalność i przenośność:** Plik tablicy MUSI być w pełni przenośny — konfiguracja przetrwa synchronizację, kopiowanie i przenoszenie między kryptami (vaults) oraz między urządzeniami, niezależnie od tego, czy wtyczka jest zainstalowana, odinstalowana, czy zaktualniona.
+- **Czytelność bez wtyczki:** Plik tablicy MUSI pozostać czytelnym i interpretowalnym przez użytkownika lub agenta AI, który nie ma dostępu do wtyczki, a jedynie do czystych notatek Markdown. Odbiorca musi móc rozpoznać kolejność historii i wydań, sposób interpretacji treści oraz relacje między nimi wyłącznie na podstawie zawartości pliku.
+- **Odtwarzalność po reinstalacji:** Ponowna instalacja wtyczki MUSI odtworzyć widok mapy identycznie jak przed odinstalowaniem — żadne dane, konfiguracja ani struktura nie mogą zostać zgubione w cyklu instalacja → odinstalacja → reinstalacja.
 
 ## Dodatkowe wymagania i ograniczenia
 
@@ -83,4 +92,4 @@ Konstytucja dotyczy rozwoju, utrzymania i ewolucji wtyczki **Obsidian User Story
 - Zmiany konstytucji wymagają uzasadnienia wynikającego ze zmian w Obsidian API, wymogów bezpieczeństwa lub istotnych potrzeb użytkowników.
 - Przegląd zgodności z konstytucją jest obowiązkowym punktem przy akceptacji PR oraz przed wypuszczeniem każdej wersji produkcyjnej.
 
-**Version**: 1.1.0 | **Ratified**: 2026-10-14 | **Last Amended**: 2026-10-14
+**Version**: 1.3.0 | **Ratified**: 2026-10-14 | **Last Amended**: 2026-10-15
