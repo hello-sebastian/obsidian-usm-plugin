@@ -32,11 +32,14 @@ import { UNASSIGNED, cellKey, normalizeKey } from '../types';
 /**
  * One hierarchy level as discovered while scanning the entries: the
  * normalized grouping `key` plus the display `label` (original casing) of the
- * first occurrence.
+ * first occurrence, and the resolved `linkPath` when the value is a wikilink
+ * (FR-007).
  */
 interface LevelEntry {
 	key: string;
 	label: string;
+	/** Resolved note path when the value is a wikilink (FR-007). */
+	linkPath?: string;
 }
 
 /**
@@ -52,7 +55,7 @@ function levelOf(value: AttributeValue | null): LevelEntry {
 	if (text.length === 0) {
 		return { key: UNASSIGNED, label: UNASSIGNED };
 	}
-	return { key: normalizeKey(text), label: text };
+	return { key: normalizeKey(text), label: text, linkPath: value.linkPath };
 }
 
 /**
@@ -73,6 +76,7 @@ export function buildGridModel(
 	};
 
 	const cells = new Map<string, StoryEntry[]>();
+	const headerLinks = new Map<string, string>();
 
 	// Column hierarchy bookkeeping (first-appearance order, key-based so that
 	// values group case-insensitively).
@@ -97,6 +101,9 @@ export function buildGridModel(
 			group = { activity: activity.label, tasks: [] };
 			activitiesByKey.set(activity.key, group);
 			activities.push(group);
+			if (activity.linkPath !== undefined) {
+				headerLinks.set(`activity:${activity.key}`, activity.linkPath);
+			}
 		}
 
 		// --- Task (nested under Activity) ---
@@ -111,6 +118,9 @@ export function buildGridModel(
 			taskGroup = { task: task.label, epics: [] };
 			taskMap.set(task.key, taskGroup);
 			group.tasks.push(taskGroup);
+			if (task.linkPath !== undefined) {
+				headerLinks.set(`task:${task.key}`, task.linkPath);
+			}
 		}
 
 		// --- Epic (nested under Task) ---
@@ -123,12 +133,18 @@ export function buildGridModel(
 			// First encounter: the current label is the first-appearance label.
 			epicSeen.add(epic.key);
 			taskGroup.epics.push(epic.label);
+			if (epic.linkPath !== undefined) {
+				headerLinks.set(`epic:${epic.key}`, epic.linkPath);
+			}
 		}
 
 		// --- Release (rows) ---
 		if (!releaseSeen.has(release.key)) {
 			releaseSeen.add(release.key);
 			releaseEntries.push(release);
+			if (release.linkPath !== undefined) {
+				headerLinks.set(`release:${release.key}`, release.linkPath);
+			}
 		}
 
 		// --- Cell placement (order of appearance within the cell) ---
@@ -178,6 +194,7 @@ export function buildGridModel(
 		activities,
 		releases,
 		cells,
+		headerLinks,
 		unassigned,
 	};
 }

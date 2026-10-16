@@ -151,6 +151,13 @@ export interface GridModel {
 	 */
 	cells: Map<string, StoryEntry[]>;
 	/**
+	 * Link paths for header values that are wikilinks (FR-007). Keyed by
+	 * `${level}:${normalizedKey}` where `level` is `activity` | `task` |
+	 * `epic` | `release`. Absent for plain-text values and UNASSIGNED. The
+	 * renderer uses this to render a header as a clickable link.
+	 */
+	headerLinks: Map<string, string>;
+	/**
 	 * Per-level flag indicating whether an "Unassigned" section exists at
 	 * that level (so the renderer knows which sections to draw).
 	 */

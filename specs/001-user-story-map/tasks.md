@@ -86,12 +86,12 @@ description: "Task list for User Story Map Board View"
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [ ] T030 [P] [US2] Write unit tests for grid model building in `tests/unit/board-model.test.ts` — column hierarchy (Activity → Task → Epic) in order of first appearance, row order (appearance and alphabetical), `UNASSIGNED` key placement for missing attributes, case-insensitive value grouping (`Login` and `login` → same column), `cells` map key format and population, `unassigned` per-level flags (FR-005, FR-006, FR-011; SC-002; uses fixtures from T028)
+- [X] T030 [P] [US2] Write unit tests for grid model building in `tests/unit/board-model.test.ts` — column hierarchy (Activity → Task → Epic) in order of first appearance, row order (appearance and alphabetical), `UNASSIGNED` key placement for missing attributes, case-insensitive value grouping (`Login` and `login` → same column), `cells` map key format and population, `unassigned` per-level flags (FR-005, FR-006, FR-011; SC-002; uses fixtures from T028)
 
 ### Implementation for User Story 2
 
-- [ ] T013 [US2] Extend the grid rendering in `src/board/board-renderer.ts` — nested column group headers (Activity header spanning its Task sub-columns, Task header spanning its Epic columns), row headers per Release, and place each card in the cell at the intersection of its Epic column and Release row using the `GridModel.cells` keys (FR-005, FR-006, FR-008; SC-002)
-- [ ] T014 [US2] Render attribute headers with wikilink support in `src/board/board-renderer.ts` — when an Activity/Task/Epic/Release value is a wikilink, render the header as a clickable element that opens the linked note; plain-text values render as inert visual labels (FR-007)
+- [X] T013 [US2] Extend the grid rendering in `src/board/board-renderer.ts` — nested column group headers (Activity header spanning its Task sub-columns, Task header spanning its Epic columns), row headers per Release, and place each card in the cell at the intersection of its Epic column and Release row using the `GridModel.cells` keys (FR-005, FR-006, FR-008; SC-002)
+- [X] T014 [US2] Render attribute headers with wikilink support in `src/board/board-renderer.ts` — when an Activity/Task/Epic/Release value is a wikilink, render the header as a clickable element that opens the linked note; plain-text values render as inert visual labels (FR-007)
 
 **Checkpoint**: User Stories 1 AND 2 both work independently — the map shows the full 2D hierarchy with correct placement
 

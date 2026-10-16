@@ -220,7 +220,15 @@ export class BoardView extends TextFileView {
 		const container = this.contentEl.createDiv({ cls: 'usm-board-map' });
 		this.mapContainerEl = container;
 
-		new BoardRenderer(container).render(this.model);
+		// Wikilink attribute headers open their linked note (FR-007). The
+		// source path is the board file so relative link targets resolve.
+		const openLink = (linkPath: string): void => {
+			if (this.file === null) {
+				return;
+			}
+			void this.app.workspace.openLinkText(linkPath, this.file.path);
+		};
+		new BoardRenderer(container, openLink).render(this.model);
 	}
 
 	// --- Pane header toggle ---

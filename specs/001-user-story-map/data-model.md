@@ -71,6 +71,7 @@ Built by `board-model.ts` from `BoardConfig` + `StoryEntry[]`.
 | `activities` | `ColumnGroup[]` | Ordered by first appearance in the board file (FR-005). |
 | `releases` | `string[]` | Row labels, ordered per `BoardConfig.releaseRowOrder` (FR-006). |
 | `cells` | `Map<string, StoryEntry[]>` | Key: `${activityKey}::${taskKey}::${epicKey}::${releaseKey}` (missing levels use the reserved `UNASSIGNED` key). |
+| `headerLinks` | `Map<string, string>` | Link paths for header values that are wikilinks (FR-007). Key: `${level}:${normalizedKey}` where `level` is `activity` \| `task` \| `epic` \| `release`. Absent for plain-text values and `UNASSIGNED`. Lets the renderer make a header clickable without re-reading the cache. |
 | `unassigned` | `boolean` flag per level | Whether an "Unassigned" section exists for columns/rows. |
 
 ### ColumnGroup
