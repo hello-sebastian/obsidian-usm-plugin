@@ -67,11 +67,35 @@ export interface FixtureApp {
 const WIKILINK_RE = /\[\[([^[\]]+)\]\]/g;
 
 /**
+ * Parse an inline YAML array value: `[a, b, "c"]`.
+ * Items are trimmed and unquoted (the `aliases` list is the only array
+ * the pipeline reads — see the title cascade in `story-attributes.ts`).
+ */
+function parseInlineArray(value: string): string[] {
+	const inner = value.slice(1, -1).trim();
+	if (inner.length === 0) {
+		return [];
+	}
+	return inner.split(',').map((item) => {
+		let s = item.trim();
+		if (
+			s.length >= 2 &&
+			((s.startsWith('"') && s.endsWith('"')) ||
+				(s.startsWith("'") && s.endsWith("'")))
+		) {
+			s = s.slice(1, -1);
+		}
+		return s;
+	});
+}
+
+/**
  * Parse a simple `key: value` frontmatter block.
  *
  * Supports the subset of YAML the fixtures use: scalar strings (optionally
- * quoted), booleans (`true`/`false`). Returns the closing `---` line index
- * (`-1` when the file has no frontmatter).
+ * quoted), booleans (`true`/`false`), and inline arrays (`[a, b]`).
+ * Returns the closing `---` line index (`-1` when the file has no
+ * frontmatter).
  */
 function parseFrontmatter(lines: string[]): {
 	frontmatter: Record<string, unknown> | null;
@@ -94,6 +118,12 @@ function parseFrontmatter(lines: string[]): {
 			const key = line.slice(0, colon).trim();
 			let value: unknown = line.slice(colon + 1).trim();
 			if (
+				typeof value === 'string' &&
+				value.startsWith('[') &&
+				value.endsWith(']')
+			) {
+				value = parseInlineArray(value);
+			} else if (
 				typeof value === 'string' &&
 				value.length >= 2 &&
 				((value.startsWith('"') && value.endsWith('"')) ||

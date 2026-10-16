@@ -107,7 +107,7 @@ description: "Task list for User Story Map Board View"
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [ ] T031 [P] [US3] Write unit tests for story attribute reading in `tests/unit/story-attributes.test.ts` — PL/EN synonym matching (activity/aktywność, task/zadanie, epic/epik, release/wydanie/row), case-insensitive field name matching, plain-text vs. wikilink value distinction (`{ text, linkPath? }`), title cascade (`Story` → `title` → first alias → file name), missing frontmatter → all attributes `null` (FR-004, FR-009, FR-012; uses fixtures from T028)
+- [X] T031 [P] [US3] Write unit tests for story attribute reading in `tests/unit/story-attributes.test.ts` — PL/EN synonym matching (activity/aktywność, task/zadanie, epic/epik, release/wydanie/row), case-insensitive field name matching, plain-text vs. wikilink value distinction (`{ text, linkPath? }`), title cascade (`Story` → `title` → first alias → file name), missing frontmatter → all attributes `null` (FR-004, FR-009, FR-012; uses fixtures from T028)
 
 ### Implementation for User Story 3
 
