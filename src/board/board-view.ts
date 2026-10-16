@@ -17,6 +17,7 @@
  */
 import {
 	App,
+	FileView,
 	Plugin,
 	TextFileView,
 	TFile,
@@ -26,6 +27,7 @@ import {
 import { t } from '../i18n/en';
 import { readBoardConfig, parseBoardEntries } from './board-parser';
 import { buildGridModel } from './board-model';
+import { BoardRenderer } from './board-renderer';
 import type { GridModel } from '../types';
 
 /** Custom view type for the board view (stable once released). */
@@ -202,9 +204,8 @@ export class BoardView extends TextFileView {
 
 	/**
 	 * Render the visual map container. Builds the grid model from the
-	 * metadata cache and creates the map container. The full 2D grid is
-	 * rendered by T011 (`board-renderer.ts`); until then a placeholder
-	 * (story count) is shown.
+	 * metadata cache, creates the map scroll container, and renders the
+	 * grid of story cards via {@link BoardRenderer} (T011).
 	 */
 	private renderMap(): void {
 		const file = this.file;
@@ -219,11 +220,7 @@ export class BoardView extends TextFileView {
 		const container = this.contentEl.createDiv({ cls: 'usm-board-map' });
 		this.mapContainerEl = container;
 
-		// Placeholder until T011 (board-renderer.ts) provides the full grid.
-		const heading = container.createDiv({ cls: 'usm-board-map-heading' });
-		heading.setText(
-			`${t('view.board')} — ${entries.length} ${t('debug.stories').toLowerCase()}`,
-		);
+		new BoardRenderer(container).render(this.model);
 	}
 
 	// --- Pane header toggle ---
@@ -310,4 +307,58 @@ export function registerBoardViewCommands(plugin: Plugin): void {
 			}
 		},
 	});
+}
+
+/**
+ * Route board notes (`usm-board: true`) to the board view (T012).
+ *
+ * When a board note is opened in a non-board view (e.g., the standard
+ * Markdown view), the leaf is re-routed to the board view so the note
+ * displays as a visual map (US1 acceptance scenario 1). Non-board notes
+ * are never touched (US1 acceptance scenario 2). The re-route preserves
+ * the file and is idempotent: a file already in the board view is left
+ * alone, so the map/markdown toggle (T010) is never overridden.
+ */
+export function registerBoardFileRouting(plugin: Plugin): void {
+	const app = plugin.app;
+	plugin.registerEvent(
+		app.workspace.on('file-open', (file) => {
+			if (file === null) {
+				return;
+			}
+			if (!readBoardConfig(app, file).isBoard) {
+				return;
+			}
+			const leaf = findLeafWithFile(app, file);
+			if (leaf === null) {
+				return;
+			}
+			if (leaf.view instanceof BoardView) {
+				return;
+			}
+			const state = leaf.getViewState();
+			void leaf.setViewState({
+				type: BOARD_VIEW_TYPE,
+				state: state.state,
+			});
+		}),
+	);
+}
+
+/**
+ * Find the leaf that currently has `file` open in a file-backed view
+ * (Markdown or board). Returns `null` when no such leaf is found.
+ */
+function findLeafWithFile(app: App, file: TFile): WorkspaceLeaf | null {
+	const leaves = [
+		...app.workspace.getLeavesOfType('markdown'),
+		...app.workspace.getLeavesOfType(BOARD_VIEW_TYPE),
+	];
+	for (const leaf of leaves) {
+		const view = leaf.view;
+		if (view instanceof FileView && view.file === file) {
+			return leaf;
+		}
+	}
+	return null;
 }

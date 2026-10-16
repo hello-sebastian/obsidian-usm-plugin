@@ -23,6 +23,38 @@ container and the read-only source view (T010).
 	margin-bottom: var(--size-4-2);
 }
 
+/* Base grid of story cards (T011). The full 2D hierarchical grid with
+sticky headers is completed in T013/T017. */
+.usm-board-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+	gap: var(--size-4-2);
+	align-content: start;
+}
+
+/* Basic story card (T011). The full card (title cascade, Release badge,
+click-to-open) is completed in T015. */
+.usm-story-card {
+	display: flex;
+	flex-direction: column;
+	gap: var(--size-4-1);
+	padding: var(--size-4-2);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-m);
+	background-color: var(--background-secondary);
+}
+
+.usm-story-card-header {
+	color: var(--text-normal);
+	font-size: var(--font-small);
+	font-weight: var(--font-medium);
+	overflow: hidden;
+}
+
+.usm-story-card-footer {
+	min-height: var(--size-4-1);
+}
+
 /* Read-only raw source view (markdown mode of the board view). */
 .usm-board-source {
 	margin: 0;

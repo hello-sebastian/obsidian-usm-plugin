@@ -69,8 +69,8 @@ description: "Task list for User Story Map Board View"
 ### Implementation for User Story 1
 
 - [X] T010 [P] [US1] Implement the board view in `src/board/board-view.ts` — subclass `TextFileView` with a custom view type; when the opened file has `usm-board: true`, render the visual map container instead of raw Markdown; add a pane header icon and command-palette commands ("Open as User Story Map" / "Open as Markdown", labels from `src/i18n/en.ts`) that toggle the mode within the same leaf without modifying the file (FR-001, FR-002, SC-004; research R-01)
-- [ ] T011 [P] [US1] Implement the base map renderer in `src/board/board-renderer.ts` — render a `GridModel` into the view's content container: single scroll container with `overflow: auto` on both axes, CSS Grid layout, one card element per `StoryEntry` (basic card: title text + empty footer), all note-derived strings inserted as text nodes (FR-008, FR-016, FR-018; research R-04)
-- [ ] T012 [US1] Wire the view into the plugin lifecycle in `src/main.ts` — register the board view type, register the toggle commands, remove the sample-plugin boilerplate (ribbon icon, status bar, sample commands); keep `main.ts` minimal (lifecycle + registration only) (depends on T010, T011)
+- [X] T011 [P] [US1] Implement the base map renderer in `src/board/board-renderer.ts` — render a `GridModel` into the view's content container: single scroll container with `overflow: auto` on both axes, CSS Grid layout, one card element per `StoryEntry` (basic card: title text + empty footer), all note-derived strings inserted as text nodes (FR-008, FR-016, FR-018; research R-04)
+- [X] T012 [US1] Wire the view into the plugin lifecycle in `src/main.ts` — register the board view type, register the toggle commands, remove the sample-plugin boilerplate (ribbon icon, status bar, sample commands); keep `main.ts` minimal (lifecycle + registration only) (depends on T010, T011)
 
 **Checkpoint**: User Story 1 fully functional — a board note opens as a map with story cards, toggle works, content never changes (MVP demo-able)
 
