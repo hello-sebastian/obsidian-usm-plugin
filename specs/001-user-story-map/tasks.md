@@ -111,7 +111,7 @@ description: "Task list for User Story Map Board View"
 
 ### Implementation for User Story 3
 
-- [ ] T015 [P] [US3] Implement the story card component in `src/story/story-card.ts` — card DOM with header (title resolved via the cascade from `StoryEntry.title`, clamped to 2–3 lines using CSS `-webkit-line-clamp`) and footer (badge showing the Release value only — no status attribute in MVP, FR-010); click opens the linked note in the standard view (FR-019); keyboard accessible: `tabindex="0"`, `role="button"`, Enter/Space activation (Constitution Principle IV)
+- [X] T015 [P] [US3] Implement the story card component in `src/story/story-card.ts` — card DOM with header (title resolved via the cascade from `StoryEntry.title`, clamped to 2–3 lines using CSS `-webkit-line-clamp`) and footer (badge showing the Release value only — no status attribute in MVP, FR-010); click opens the linked note in the standard view (FR-019); keyboard accessible: `tabindex="0"`, `role="button"`, Enter/Space activation (Constitution Principle IV)
 - [ ] T016 [US3] Integrate the story card into the renderer in `src/board/board-renderer.ts` — replace the basic card from T011 with the `story-card.ts` component for every `StoryEntry` (depends on T015, and on T013 so the card is placed within the full 2D grid)
 
 **Checkpoint**: User Stories 1–3 all work independently — cards show correct titles, badges, and open notes on click
