@@ -12,11 +12,11 @@ The plugin renders a board note (flagged with `usm-board: true`) as a 2D visual 
 
 **Language/Version**: TypeScript 5.8+ (strict mode, no `any`)
 
-**Primary Dependencies**: Obsidian API (`obsidian` package, latest), esbuild (bundler only — no runtime deps)
+**Primary Dependencies**: Obsidian API (`obsidian` package, latest), esbuild (bundler only — no runtime deps). Dev-only (test) dependencies: Vitest (test runner) and jsdom (DOM environment for the performance tests) — zero impact on the bundled `main.js` (constitution dependency-minimization applies to runtime dependencies)
 
 **Storage**: N/A — all data lives in Markdown files within the vault; read exclusively via `app.metadataCache` (no disk I/O, no plugin-owned storage)
 
-**Testing**: Manual testing in Obsidian (Desktop + Mobile) against a test vault; debug/dev mode for performance measurement. No automated test framework in MVP.
+**Testing**: Automated unit + integration tests (Vitest) for the core logic (parser, attributes, grid model, sanitization); versioned test fixtures for reproducible runs; automated performance tests measuring render smoothness on a defined board size; manual acceptance testing in Obsidian (Desktop + Mobile) against a test vault for user-facing behavior (view toggle, 2D navigation, live updates, mobile). Debug/dev mode provides the metrics source for performance tests (FR-022, FR-023, FR-024, SC-009, SC-010).
 
 **Target Platform**: Obsidian Desktop (macOS, Windows, Linux) + Mobile (iOS, Android). No Node.js/Electron APIs.
 
@@ -43,7 +43,7 @@ The plugin renders a board note (flagged with `usm-board: true`) as a 2D visual 
 
 **Gate result: PASS — no violations. No Complexity Tracking entries required.**
 
-**Post-design re-check (after Phase 1): PASS.** The design artifacts confirm compliance: `metadataCache`-only data access (R-02), event-driven debounced updates (R-03), CSS Grid + sticky headers with no manual geometry (R-04), text-node DOM insertion for XSS safety with zero added runtime dependencies (R-05), board config in board file frontmatter (R-08, contracts), English `en` label dictionary as i18n foundation (R-09), and debug metrics gated behind a setting with proper cleanup (R-07). No new violations introduced.
+**Post-design re-check (after Phase 1): PASS.** The design artifacts confirm compliance: `metadataCache`-only data access (R-02), event-driven debounced updates (R-03), CSS Grid + sticky headers with no manual geometry (R-04), text-node DOM insertion for XSS safety with zero added runtime dependencies (R-05), board config in board file frontmatter (R-08, contracts), English `en` label dictionary as i18n foundation (R-09), debug metrics gated behind a setting with proper cleanup (R-07), and a Vitest-based automated test suite with versioned fixtures covering the core logic, integration pipeline, and performance (R-13). No new violations introduced.
 
 ## Project Structure
 
@@ -83,9 +83,25 @@ src/
 └── utils/
     ├── debounce.ts          # Debounce/throttle utility for event-driven updates
     └── sanitize.ts          # XSS sanitization: strips HTML/script from note-derived strings
+
+# Tests (automated — FR-022, FR-023, FR-024)
+tests/
+├── unit/                    # Pure-logic unit tests (no Obsidian runtime needed)
+│   ├── board-parser.test.ts     # Flag detection, config, link extraction, duplicates, broken links
+│   ├── story-attributes.test.ts # PL/EN synonyms, case-insensitivity, title cascade, missing frontmatter
+│   ├── board-model.test.ts      # Column hierarchy, row order, Unassigned grouping, value normalization
+│   └── sanitize.test.ts         # XSS neutralization of note-derived strings
+├── integration/             # End-to-end pipeline tests (board + story files → GridModel)
+│   └── pipeline.test.ts         # Full data pipeline with fixture notes (SC-002, SC-003)
+├── performance/             # Automated performance tests (FR-024, SC-001)
+│   └── render-perf.test.ts      # Render time, fps proxy, story count on a defined board size
+└── fixtures/                # Versioned test fixture notes (FR-023)
+    ├── board.md                 # Board note with flag, config, links (incl. duplicates, broken)
+    ├── S1.md … S6.md            # Story notes covering all attribute combinations
+    └── README.md                # Fixture description and coverage matrix
 ```
 
-**Structure Decision**: Single-project Obsidian plugin layout. Code is split into focused modules by responsibility: `board/` (view, parser, model, renderer), `story/` (attributes, card), `i18n/` (label dictionary), `debug/` (metrics panel), `utils/` (shared helpers). `main.ts` remains minimal (lifecycle + registration only). No `tests/` directory in MVP (manual testing per spec).
+**Structure Decision**: Single-project Obsidian plugin layout. Code is split into focused modules by responsibility: `board/` (view, parser, model, renderer), `story/` (attributes, card), `i18n/` (label dictionary), `debug/` (metrics panel), `utils/` (shared helpers). `main.ts` remains minimal (lifecycle + registration only). A `tests/` directory contains automated unit, integration, and performance tests (Vitest) with versioned fixtures — tests are a first-class part of the MVP (FR-022–FR-024). The core logic modules (`board-parser`, `story-attributes`, `board-model`, `sanitize`) are designed as pure functions (no Obsidian API dependency) so they are directly unit-testable in Node.js; the integration tests exercise the full pipeline with fixture data; performance tests measure render smoothness on a defined board size.
 
 ## Complexity Tracking
 

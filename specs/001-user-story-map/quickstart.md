@@ -138,6 +138,25 @@ release: "2.0"
 1. Open the board on a phone/tablet.
 2. **Expected**: the map renders, scrolls in both axes with sticky headers, cards are tappable (open the note), and debug metrics are available. No desktop-only behavior.
 
+## Automated test suite (FR-022, FR-023, FR-024, SC-009, SC-010)
+
+The automated suite runs in Node.js (no Obsidian instance required) against the versioned fixtures in `tests/fixtures/`:
+
+```bash
+npm test                # full suite: unit + integration + performance
+npm run test:unit       # core logic only (parser, attributes, model, sanitize)
+npm run test:integration  # full pipeline: board + story fixtures → GridModel (SC-002, SC-003)
+npm run test:perf       # render performance on a defined board size (FR-024, SC-001)
+```
+
+**Expected**:
+- All unit tests pass: flag detection, config parsing, link extraction (duplicates, broken links), PL/EN synonym matching, title cascade, grid model (column hierarchy, row order, Unassigned grouping, case-insensitive values), XSS neutralization.
+- Integration tests pass: the fixture board + story notes produce the expected `GridModel` (correct cells, order, Unassigned flags).
+- Performance tests pass: render time and story count on the defined board size are within the thresholds recorded by the test run (thresholds are established by the first passing run and then enforced).
+- The full suite completes in under 2 minutes on a clean environment (SC-010).
+
+The manual scenarios Q1–Q10 below cover the user-facing behavior that requires the real Obsidian environment (view toggle, 2D navigation, live updates, mobile).
+
 ## Pass criteria
 
-All scenarios Q1–Q10 pass on Desktop; Q10 passes on at least one mobile device. Any failure blocks `/speckit-tasks` completion for the affected requirement.
+All automated tests pass (unit + integration + performance, under 2 minutes) **and** all manual scenarios Q1–Q10 pass on Desktop; Q10 passes on at least one mobile device. Any failure blocks `/speckit-tasks` completion for the affected requirement.

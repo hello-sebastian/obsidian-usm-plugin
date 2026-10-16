@@ -1,7 +1,7 @@
 {
-	"name": "obsidian-sample-plugin",
-	"version": "1.0.0",
-	"description": "This is a sample plugin for Obsidian (https://obsidian.md)",
+	"name": "obsidian-usm-plugin",
+	"version": "0.1.0",
+	"description": "Obsidian plugin that renders a board note as a 2D visual user story map.",
 	"main": "main.js",
 	"type": "module",
 	"scripts": {
@@ -9,7 +9,11 @@
 		"build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
 		"deploy": "npm run build && mkdir -p \"/Users/sebastian/OneDrive/Aplikacje/Hermes/Hermes-sebastian/.obsidian/plugins/sample-plugin\" && cp main.js manifest.json styles.css \"/Users/sebastian/OneDrive/Aplikacje/Hermes/Hermes-sebastian/.obsidian/plugins/sample-plugin/\"",
 		"version": "node version-bump.mjs && git add manifest.json versions.json",
-		"lint": "eslint ."
+		"lint": "eslint .",
+		"test": "vitest run",
+		"test:unit": "vitest run tests/unit",
+		"test:integration": "vitest run tests/integration",
+		"test:perf": "vitest run tests/performance"
 	},
 	"keywords": [],
 	"license": "0-BSD",
@@ -21,8 +25,10 @@
 		"eslint-plugin-obsidianmd": "^0.4.0",
 		"globals": "^17.6.0",
 		"jiti": "^2.6.1",
+		"jsdom": "^30.1.3",
 		"obsidian": "latest",
 		"typescript": "^5.8.3",
-		"typescript-eslint": "^8.59.1"
+		"typescript-eslint": "^8.59.1",
+		"vitest": "^3.2.7"
 	}
 }

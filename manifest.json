@@ -1,11 +1,9 @@
 {
-	"id": "sample-plugin",
-	"name": "Sample Plugin",
-	"version": "1.0.0",
+	"id": "obsidian-usm-plugin",
+	"name": "User Story Map",
+	"version": "0.1.0",
 	"minAppVersion": "1.0.0",
-	"description": "Demonstrates some of the capabilities of the Obsidian API.",
-	"author": "Obsidian",
-	"authorUrl": "https://obsidian.md",
-	"fundingUrl": "https://obsidian.md/pricing",
+	"description": "Renders a board note (usm-board: true) as a 2D visual user story map: columns by Activity → Task → Epic, rows by Release. Read-only, auto-updating, with seamless toggle to raw Markdown.",
+	"author": "Sebastian",
 	"isDesktopOnly": false
 }

@@ -21,6 +21,7 @@
 - Q: How does the user enable the optional alphabetical sorting of Release rows (FR-006)? → A: Board configuration (including sorting) is stored as attributes in the header of the board file (board-xyz.md), so that it survives synchronization and copying and remains readable even for AI agents without the plugin.
 - Q: Exactly what should be displayed in the badge in the footer of a story card (FR-010)? → A: In the MVP the badge shows only the Release value; a separate "status" attribute is out of scope for the MVP.
 - Q: What language should the map interface labels use (section headers, the "Unassigned" label, command and icon texts)? → A: In the MVP the interface is based exclusively on English naming — terminology, labels, and messages are stored in a single "en" dictionary; the dictionary mechanism is the foundation for future multilingual support (additional dictionary versions will be developed in later iterations).
+- Q: The original specification deferred automated tests to later iterations ("performance tests will be added later"). Is that acceptable? → A: No — tests are a fundamental part of the feature and the baseline that defines whether the goals are achieved. Automated tests (unit + integration) for the core logic, reproducible test fixtures, and automated performance tests are part of the MVP scope; manual acceptance testing via the quickstart scenarios remains for user-facing behavior.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -124,6 +125,27 @@ The map is read-only; all editing happens in the Markdown source. The map automa
 
 ---
 
+### Testing Strategy
+
+Tests are a first-class part of this feature: they are the baseline that defines whether the goals in the Success Criteria are achieved. Every user story above is independently testable, and its acceptance scenarios are the source of the test cases.
+
+**Test levels** (from most to least automated):
+
+1. **Automated unit tests** — the pure logic of the feature, without the user interface:
+   - Board file parsing: flag detection, configuration reading, link extraction, ignoring non-link lines, duplicate links, broken links (FR-001, FR-003, FR-006, FR-018, FR-021).
+   - Story attribute reading: field-name synonyms (Polish/English, case-insensitive), plain-text vs. link values, the title cascade, missing header (FR-004, FR-009, FR-012).
+   - Grid model building: column hierarchy in order of first appearance, row order (default and alphabetical), "Unassigned" grouping, case-insensitive value grouping (FR-005, FR-006, FR-011).
+   - Content safety: note-derived strings containing markup or script fragments are neutralized and never executed (FR-016).
+2. **Automated integration tests** — the data pipeline end to end (board file + story files → grid model), verifying that the model matches the expected structure for a given set of notes (SC-002, SC-003).
+3. **Manual acceptance tests** — the user-facing behavior that requires the real application environment, executed against the scenarios in `quickstart.md`: opening the map, switching views, 2D navigation, live updates, mobile behavior (FR-002, FR-013, FR-014, FR-019; SC-004, SC-005, SC-006).
+4. **Performance tests** — automated measurement of rendering smoothness (e.g., frame rate, render time, number of rendered stories) on a board of a defined size, using the debug/dev mode metrics as the measurement source; the results establish the performance thresholds referenced in SC-001 (FR-020, FR-024).
+
+**Test data**: a dedicated set of fixture notes (a board note and story notes) covering all attribute combinations, missing attributes, duplicates, broken links, and mixed Polish/English field names. The fixtures are versioned with the project so that every test run is reproducible.
+
+**Definition of done for a user story**: a story is complete only when its acceptance scenarios pass — the automated tests for its logic and the relevant manual scenarios for its user-facing behavior.
+
+---
+
 ### Edge Cases
 
 - What happens when a board note contains a wiki link to a non-existent note (a broken link)? → The link is shown as unrecognized (a placeholder); the map does not hang.
@@ -152,7 +174,7 @@ The map is read-only; all editing happens in the Markdown source. The map automa
 - **FR-010**: The system MUST display the Release value in the badge in the card footer (in the MVP the badge shows only the Release value; a separate "status" attribute is out of scope for the MVP).
 - **FR-011**: The system MUST group stories missing any attribute into dedicated "Unassigned" sections, without reporting an error or interrupting rendering.
 - **FR-012**: The system MUST use case-insensitive field matching that recognizes Polish and English field names (e.g., activity/aktywność, task/zadanie, epic/epik, release/wydanie/row).
-- **FR-013**: The system MUST automatically update the map in response to changes in the board note or linked story notes, without requiring a manual reload and without excessive re-rendering during active editing.
+- **FR-013**: The system MUST automatically update the map in response to changes in the board note or linked story notes, without requiring a manual reload; a burst of changes MUST trigger at most one re-render (debounced), and the update MUST complete within 2 seconds of the last edit (SC-005).
 - **FR-014**: The system MUST enable 2D navigation (horizontal and vertical scrolling) with column and row headers remaining visible while scrolling.
 - **FR-015**: The system MUST keep the visual map read-only; all content editing happens in the Markdown source.
 - **FR-016**: The system MUST render all note-derived content safely, so that no markup or script embedded in a note can be executed in the interface.
@@ -161,6 +183,9 @@ The map is read-only; all editing happens in the Markdown source. The map automa
 - **FR-019**: The system MUST open the linked story note in the standard view after a story card on the map is clicked (MVP behavior).
 - **FR-020**: The system MUST provide a debug/dev mode that displays map rendering smoothness metrics (e.g., fps, number of displayed stories), to enable performance measurement and optimization.
 - **FR-021**: The system MUST store board configuration (e.g., row order) as attributes in the board file's header, so that the board file is self-describing and portable — the configuration survives synchronization and copying and remains readable even without the plugin installed (e.g., for AI agents reading the notes).
+- **FR-022**: The system MUST provide automated tests for the feature's core logic (board file parsing, story attribute reading, grid model building, and content safety), so that regressions in the data pipeline are detected without manual verification.
+- **FR-023**: The system MUST provide a set of test fixtures (a board note and story notes covering complete, incomplete, duplicated, and broken data, as well as Polish and English field names) that is versioned with the project, so that every test run is reproducible.
+- **FR-024**: The system MUST provide automated performance tests that measure rendering smoothness (e.g., frame rate, render time, number of rendered stories) on a board of a defined size, so that the performance thresholds in SC-001 can be established and verified.
 
 ### Key Entities
 
@@ -183,6 +208,8 @@ The map is read-only; all editing happens in the Markdown source. The map automa
 - **SC-006**: The user can scroll the map by at least 10 columns and 5 rows in both directions, with the headers remaining visible.
 - **SC-007**: Note content never leaves the local machine (100% local operation, no data sent externally).
 - **SC-008**: 90% of users correctly identify the Activity and Release of a given story by reading the map, without opening the underlying note.
+- **SC-009**: 100% of the functional requirements (FR-001–FR-024) are covered by at least one test (automated or manual), and every user story's acceptance scenarios pass before the story is considered complete.
+- **SC-010**: The automated test suite for the core logic (parsing, attribute reading, grid model, content safety) runs to completion in under 2 minutes and passes on a clean environment without manual intervention.
 
 ## Assumptions
 
@@ -190,9 +217,11 @@ The map is read-only; all editing happens in the Markdown source. The map automa
 - The board note and the story notes are in the same vault; cross-vault references are out of scope.
 - The visual map in the MVP is read-only; drag-and-drop, inline editing, and creating notes from the map are out of scope for this milestone.
 - In later iterations, clicking a card in graphical mode will open a dialog/popup with a graphical representation of the note's content without leaving board mode; in the MVP, clicking a card opens the note in the standard view.
-- Performance is a priority, but in the MVP code cleanliness, universality, and the generality of the architecture that ensure healthy development are equally important; hard performance thresholds will be established later based on the debug/dev mode metrics and tests.
+- Performance is a priority, but in the MVP code cleanliness, universality, and the generality of the architecture that ensure healthy development are equally important; hard performance thresholds will be established later based on the debug/dev mode metrics and the automated performance tests (FR-024).
 - A reasonable default value for the title line-count limit is a small, fixed number (e.g., 2–3 lines); the exact value is an interface detail.
 - Board configuration (e.g., Release row order) is stored as attributes in the board file's header; the default order is the order of first appearance, optionally alphabetical sorting. This way the configuration survives synchronization and copying and remains readable even without the plugin installed (e.g., for AI agents reading the notes).
 - The plugin supports both Desktop and Mobile; no Node.js/Electron APIs are used.
 - Field name matching is based by default on a built-in Polish/English synonym dictionary; the user does not need to configure it in the MVP.
 - The map interface labels (section headers, the "Unassigned" label, command and icon texts) are in the MVP exclusively in English and stored in a single "en" dictionary; the dictionary mechanism is the foundation for future multilingual support — additional dictionary versions will be developed in later iterations.
+- Tests are part of the MVP scope, not a later iteration: automated unit and integration tests cover the core logic, reproducible fixtures make every run deterministic, and automated performance tests establish the performance thresholds; manual acceptance testing via the quickstart scenarios covers the user-facing behavior that requires the real application environment.
+- SC-008 (90% of users correctly identify the Activity and Release of a given story by reading the map) is a post-launch usability metric: it will be validated via user testing after release and does not gate the MVP build.

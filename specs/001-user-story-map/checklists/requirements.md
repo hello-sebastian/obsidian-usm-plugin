@@ -33,4 +33,5 @@
 
 - All 16 items passed on the first validation iteration (2026-10-15).
 - No `[NEEDS CLARIFICATION]` markers were required — the input report was sufficiently detailed, and reasonable defaults were recorded in the Assumptions section.
-- Spec is ready for `/speckit-plan` (or `/speckit-clarify` if further refinement is desired).
+- **Re-validation (2026-10-15, iteration 2)**: the spec was corrected after it was found to defer testing to later iterations, which contradicted the project's quality goals. Added: a clarification entry recording the decision, a **Testing Strategy** section (automated unit + integration tests for the core logic, manual acceptance tests via quickstart, automated performance tests, versioned fixtures, per-story definition of done), functional requirements FR-022–FR-024, success criteria SC-009–SC-010, and an updated Assumptions entry. All 16 checklist items re-verified and passing.
+- Spec is ready for `/speckit-plan` (or `/speckit-clarify` if further refinement is desired). Note: `plan.md` (Testing section), `tasks.md` (test tasks), and `quickstart.md` should be aligned with the new testing scope before implementation continues.
