@@ -12,17 +12,21 @@
  * - keyboard accessible: `tabindex="0"`, `role="button"` (Constitution
  *   Principle IV).
  *
- * Broken-link entries (`isBroken: true`, no `targetPath`) render as inert
- * cards — no click or keyboard activation, since there is no note to open.
- * The dimmed placeholder styling is added by T018.
+ * Broken-link entries (`isBroken: true`, no `targetPath`) render as dimmed,
+ * inert placeholder cards (T018, research R-11) — no click or keyboard
+ * activation, since there is no note to open. The card shows the link text
+ * as its title plus a "Missing note" hint in the footer (label from
+ * `src/i18n/en.ts`). The dimmed styling (reduced opacity, dashed border,
+ * no hover/focus affordances) is defined in `styles.css`.
  *
- * All note-derived strings (title, badge) are inserted as text nodes
+ * All note-derived strings (title, badge, hint) are inserted as text nodes
  * (FR-016) — never via `innerHTML` — so note content can never execute as
  * markup.
  *
  * Integration into the grid renderer is provided by T016.
  */
 import type { StoryEntry } from '../types';
+import { t } from '../i18n/en';
 
 /**
  * Create a story card in `parent` for `entry`.
@@ -55,11 +59,15 @@ export function createStoryCard(
 		badge.setText(release.text);
 	}
 
-	// Broken links have no note to open → the card is inert (no click or
-	// keyboard activation). T018 adds the dimmed placeholder styling.
+	// Broken links have no note to open → the card is a dimmed, inert
+	// placeholder (T018, R-11): no click or keyboard activation. The title
+	// already carries the link text (set by the parser); the footer shows a
+	// "Missing note" hint so the user knows the target is absent.
 	const targetPath = entry.targetPath;
 	if (entry.isBroken || targetPath === null) {
 		card.addClass('usm-story-card--broken');
+		const hint = footer.createSpan({ cls: 'usm-story-card-broken-hint' });
+		hint.setText(t('card.broken'));
 		return card;
 	}
 

@@ -23,25 +23,42 @@ container and the read-only source view (T010).
 	margin-bottom: var(--size-4-2);
 }
 
-/* 2D hierarchical grid (T013). The grid is dynamic — the renderer sets
-the --usm-grid-cols / --usm-grid-rows custom properties (column/row
-counts depend on the model) and --usm-col / --usm-row per element; this
-stylesheet maps them onto the grid properties (research R-04: CSS Grid,
-no manual geometry). Sticky headers arrive in T017. When the content is
-wider/taller than the container, the single scroll container
+/* 2D hierarchical grid (T013, sticky headers T017). The grid is dynamic —
+the renderer sets the --usm-grid-cols / --usm-grid-rows custom properties
+(column/row counts depend on the model) and --usm-col / --usm-row per
+element; this stylesheet maps them onto the grid properties (research
+R-04: CSS Grid, no manual geometry). The grid is width: max-content so the
+row headers can stick horizontally; column headers stick to the top, row
+headers to the left, and the corner to both (FR-014, SC-006). When the
+content is wider/taller than the container, the single scroll container
 (.usm-board-map) scrolls on both axes. */
 .usm-board-grid {
+	/* Fixed height of each of the three column-header rows (Activity /
+	Task / Epic). The renderer emits this into --usm-grid-rows and the
+	sticky top offsets below are computed from it (T017). */
+	--usm-header-h: 28px;
 	display: grid;
+	/* width: max-content makes the grid's box as wide as its content so
+	that position: sticky; left: 0 on the row headers is constrained by
+	the full content width (not the container) and can stick while
+	scrolling horizontally (T017, research R-04). */
+	width: max-content;
 	grid-template-columns: var(--usm-grid-cols);
 	grid-template-rows: var(--usm-grid-rows);
 	gap: var(--size-4-1);
 	align-content: start;
 }
 
-/* Grid corner cell (spans the header rows; T017 pins it on both axes). */
+/* Grid corner cell (spans the header rows). Pinned on both axes (T017)
+so it stays at the top-left while scrolling in either direction. */
 .usm-grid-corner {
 	grid-column: 1;
 	grid-row: 1 / span 3;
+	position: sticky;
+	top: 0;
+	left: 0;
+	z-index: 3;
+	background-color: var(--background-secondary);
 }
 
 /* Column and row headers. */
@@ -61,28 +78,45 @@ wider/taller than the container, the single scroll container
 	text-overflow: ellipsis;
 }
 
+/* Column headers are sticky on the vertical axis (T017): they stay
+visible while scrolling down. Each level is offset by the fixed header
+row height plus the grid gap. */
 .usm-grid-activity-header {
 	grid-column: var(--usm-col);
 	grid-row: var(--usm-row);
 	text-align: center;
+	position: sticky;
+	top: 0;
+	z-index: 2;
 }
 
 .usm-grid-task-header {
 	grid-column: var(--usm-col);
 	grid-row: var(--usm-row);
 	text-align: center;
+	position: sticky;
+	top: calc(var(--usm-header-h) + var(--size-4-1));
+	z-index: 2;
 }
 
 .usm-grid-epic-header {
 	grid-column: var(--usm-col);
 	grid-row: var(--usm-row);
 	text-align: center;
+	position: sticky;
+	top: calc(var(--usm-header-h) * 2 + var(--size-4-1) * 2);
+	z-index: 2;
 }
 
+/* Row headers are sticky on the horizontal axis (T017): they stay
+visible while scrolling right. */
 .usm-grid-release-header {
 	grid-column: var(--usm-col);
 	grid-row: var(--usm-row);
 	text-align: left;
+	position: sticky;
+	left: 0;
+	z-index: 2;
 }
 
 /* Wikilink attribute header (FR-007): a header value that is a wikilink
@@ -162,6 +196,33 @@ via tabindex + role=button (Constitution Principle IV). */
 	background-color: var(--background-modifier-hover);
 	color: var(--text-muted);
 	font-size: var(--font-smaller);
+}
+
+/* "Unassigned" section headers (T018, FR-011): visually distinguished
+from assigned headers with a dashed border and muted text so the dedicated
+catch-all column group / sub-column / row is immediately recognizable. */
+.usm-header-unassigned {
+	border-style: dashed;
+	color: var(--text-muted);
+}
+
+/* Broken-link placeholder card (T018, R-11): dimmed, inert, dashed border.
+Shows the link text as title plus a "Missing note" hint in the footer.
+No hover or focus affordances — there is no note to open. */
+.usm-story-card--broken {
+	opacity: 0.55;
+	cursor: default;
+	border-style: dashed;
+}
+
+.usm-story-card--broken:hover {
+	border-color: var(--background-modifier-border);
+}
+
+.usm-story-card-broken-hint {
+	color: var(--text-faint);
+	font-size: var(--font-smaller);
+	font-style: italic;
 }
 
 /* Read-only raw source view (markdown mode of the board view). */

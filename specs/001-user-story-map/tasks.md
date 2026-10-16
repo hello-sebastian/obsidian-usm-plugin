@@ -126,7 +126,7 @@ description: "Task list for User Story Map Board View"
 
 ### Implementation for User Story 4
 
-- [ ] T017 [US4] Implement sticky headers and 2D scrolling in `src/board/board-renderer.ts` and `styles.css` — single scroll container (`overflow: auto`), column headers with `position: sticky; top: 0`, row headers with `position: sticky; left: 0`, corner cell pinned on both axes; verify with ≥ 10 columns and ≥ 5 rows (FR-014, SC-006; research R-04)
+- [X] T017 [US4] Implement sticky headers and 2D scrolling in `src/board/board-renderer.ts` and `styles.css` — single scroll container (`overflow: auto`), column headers with `position: sticky; top: 0`, row headers with `position: sticky; left: 0`, corner cell pinned on both axes; verify with ≥ 10 columns and ≥ 5 rows (FR-014, SC-006; research R-04)
 
 **Checkpoint**: User Stories 1–4 all work independently — navigation is usable on large maps
 
@@ -142,11 +142,11 @@ description: "Task list for User Story Map Board View"
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [ ] T032 [P] [US5] Write integration tests for the full data pipeline in `tests/integration/pipeline.test.ts` — load fixture board + story notes (from `tests/fixtures/`), run the complete pipeline (parse → attributes → model), verify: stories with missing attributes land in `UNASSIGNED` cells at the correct level, broken links produce `isBroken` entries with correct grid position, stories with no frontmatter are fully unassigned, the resulting `GridModel` matches the expected structure (cell keys, order, unassigned flags) (FR-011, SC-002, SC-003; depends on T028)
+- [X] T032 [P] [US5] Write integration tests for the full data pipeline in `tests/integration/pipeline.test.ts` — load fixture board + story notes (from `tests/fixtures/`), run the complete pipeline (parse → attributes → model), verify: stories with missing attributes land in `UNASSIGNED` cells at the correct level, broken links produce `isBroken` entries with correct grid position, stories with no frontmatter are fully unassigned, the resulting `GridModel` matches the expected structure (cell keys, order, unassigned flags) (FR-011, SC-002, SC-003; depends on T028)
 
 ### Implementation for User Story 5
 
-- [ ] T018 [US5] Render "Unassigned" sections and broken-link placeholders in `src/board/board-renderer.ts` — dedicated "Unassigned" column group / sub-column / row using the label from `src/i18n/en.ts` whenever the `GridModel` contains the `UNASSIGNED` key at that level; render `isBroken` entries as dimmed placeholder cards showing the link text; no errors, no intrusive notifications (FR-011, SC-003; research R-11)
+- [X] T018 [US5] Render "Unassigned" sections and broken-link placeholders in `src/board/board-renderer.ts` — dedicated "Unassigned" column group / sub-column / row using the label from `src/i18n/en.ts` whenever the `GridModel` contains the `UNASSIGNED` key at that level; render `isBroken` entries as dimmed placeholder cards showing the link text; no errors, no intrusive notifications (FR-011, SC-003; research R-11)
 
 **Checkpoint**: User Stories 1–5 all work independently — incomplete data is fully resilient
 

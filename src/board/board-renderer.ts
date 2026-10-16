@@ -1,5 +1,5 @@
 /**
- * Map renderer (T011, extended by T013, T014, T016).
+ * Map renderer (T011, extended by T013, T014, T016, T017).
  *
  * Renders a {@link GridModel} into the board view's map container: a
  * single scroll container (`overflow: auto` on both axes) holding a CSS
@@ -22,9 +22,24 @@
  * `story-card.ts` (T015): clamped title, Release badge, click-to-open,
  * keyboard access (FR-009, FR-010, FR-019).
  *
- * Scope boundaries (later tasks extend this renderer):
- * - T017 adds sticky headers; T018 adds "Unassigned" sections and
- *   broken-link placeholders.
+ * T017 adds sticky headers and 2D scrolling: the single scroll container
+ * (`.usm-board-map`, `overflow: auto`) scrolls on both axes while the
+ * column headers stay pinned to the top, the row headers to the left, and
+ * the corner cell to both (FR-014, SC-006; research R-04). The grid is
+ * `width: max-content` (styles.css) so the row headers can stick
+ * horizontally, and the three column-header rows have a fixed height so
+ * the sticky offsets are known.
+ *
+ * T018 renders "Unassigned" sections and broken-link placeholders
+ * (FR-011, SC-003; research R-11):
+ * - headers whose label is the UNASSIGNED sentinel get the
+ *   `usm-header-unassigned` class (dashed border, muted text) so the
+ *   dedicated "Unassigned" column group / sub-column / row is visually
+ *   distinct from assigned headers;
+ * - `isBroken` entries render as dimmed, inert placeholder cards showing
+ *   the link text plus a "Missing note" hint (see `story-card.ts`);
+ * - no errors are thrown and no intrusive notifications are shown —
+ *   incomplete data degrades gracefully.
  *
  * All note-derived strings are inserted as text nodes (FR-016) — never
  * via `innerHTML` — so note content can never execute as markup.
@@ -106,8 +121,15 @@ export class BoardRenderer {
 	private renderGrid(model: GridModel, grid: HTMLElement): void {
 		const epicColumns = this.flattenEpicColumns(model);
 		grid.setCssProps({
-			'--usm-grid-cols': `minmax(140px, auto) repeat(${epicColumns.length}, minmax(160px, 1fr))`,
-			'--usm-grid-rows': `repeat(3, auto) repeat(${model.releases.length}, auto)`,
+			// Data columns size to their content (min 160px) so a single
+			// long title does not inflate every column (T017). The grid
+			// itself is width: max-content (styles.css), which is what lets
+			// the row headers stick horizontally.
+			'--usm-grid-cols': `minmax(140px, auto) repeat(${epicColumns.length}, minmax(160px, max-content))`,
+			// The three column-header rows have a fixed height
+			// (--usm-header-h, styles.css) so the sticky top offsets are
+			// known; release rows size to their content (T017).
+			'--usm-grid-rows': `repeat(3, var(--usm-header-h)) repeat(${model.releases.length}, auto)`,
 		});
 
 		// Corner cell spanning the three header rows (T017 pins it).
@@ -240,6 +262,13 @@ export class BoardRenderer {
 		const linkPath = model.headerLinks.get(
 			`${level}:${normalizeKey(label)}`,
 		);
+		// "Unassigned" section header (FR-011): mark it so the stylesheet
+		// can render a dedicated, visually distinct section (dashed border,
+		// muted text). UNASSIGNED headers are always inert — the model never
+		// records a link path for the sentinel.
+		if (label === UNASSIGNED) {
+			headerEl.addClass('usm-header-unassigned');
+		}
 		if (linkPath === undefined) {
 			// Plain-text value → inert visual label.
 			headerEl.setText(this.displayLabel(label));
