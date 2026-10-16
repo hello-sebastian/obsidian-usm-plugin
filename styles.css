@@ -1,8 +1,35 @@
 /*
+User Story Map plugin styles.
 
-This CSS file will be included with your plugin, and
-available in the app when your plugin is enabled.
-
-If your plugin does not need CSS, delete this file.
-
+Uses Obsidian CSS variables for full light/dark theme adaptation
+(Constitution Principle I). Full map styling (grid, sticky headers,
+cards) is completed in T024; this file currently covers the board view
+container and the read-only source view (T010).
 */
+
+/* Board map container: single scroll container (research R-04). */
+.usm-board-map {
+	position: relative;
+	width: 100%;
+	height: 100%;
+	overflow: auto;
+	padding: var(--size-4-3);
+	background-color: var(--background-primary);
+}
+
+.usm-board-map-heading {
+	color: var(--text-muted);
+	font-size: var(--font-ui-small);
+	margin-bottom: var(--size-4-2);
+}
+
+/* Read-only raw source view (markdown mode of the board view). */
+.usm-board-source {
+	margin: 0;
+	padding: var(--size-4-3);
+	color: var(--text-normal);
+	font-family: var(--font-monospace);
+	font-size: var(--font-smaller);
+	white-space: pre-wrap;
+	background-color: var(--background-primary);
+}
