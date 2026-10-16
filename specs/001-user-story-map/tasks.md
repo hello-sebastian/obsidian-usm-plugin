@@ -160,8 +160,8 @@ description: "Task list for User Story Map Board View"
 
 ### Implementation for User Story 6
 
-- [ ] T019 [US6] Implement event-driven live updates in `src/board/board-view.ts` — register `metadataCache.on('changed')` and `vault.on('modify')` via `this.registerEvent`; filter events to the board file and its linked story files; debounce with `src/utils/debounce.ts` so a burst of changes triggers a single model rebuild + re-render; update must complete within 2 seconds of the edit (FR-013, SC-005; research R-03)
-- [ ] T020 [US6] Enforce read-only behavior in `src/board/board-view.ts` and `src/board/board-renderer.ts` — no editing affordances on the map (no drag, no inline edit, no context-menu mutations); verify the board file and story files are never written by the plugin, so that after the plugin is disabled the board note remains a readable, bulleted list of links in standard Markdown (FR-015, FR-017, SC-004)
+- [X] T019 [US6] Implement event-driven live updates in `src/board/board-view.ts` — register `metadataCache.on('changed')` and `vault.on('modify')` via `this.registerEvent`; filter events to the board file and its linked story files; debounce with `src/utils/debounce.ts` so a burst of changes triggers a single model rebuild + re-render; update must complete within 2 seconds of the edit (FR-013, SC-005; research R-03)
+- [X] T020 [US6] Enforce read-only behavior in `src/board/board-view.ts` and `src/board/board-renderer.ts` — no editing affordances on the map (no drag, no inline edit, no context-menu mutations); verify the board file and story files are never written by the plugin, so that after the plugin is disabled the board note remains a readable, bulleted list of links in standard Markdown (FR-015, FR-017, SC-004)
 
 **Checkpoint**: All user stories independently functional — the map is a live, read-only projection of the Markdown source
 

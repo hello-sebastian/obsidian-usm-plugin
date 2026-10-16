@@ -11,6 +11,15 @@
  * The map is read-only (FR-015): the "markdown" mode renders the raw
  * source as inert text so the file content is never changed by the view.
  *
+ * T019 adds event-driven live updates: `metadataCache.on('changed')` and
+ * `vault.on('modify')` are filtered to the board file and its linked story
+ * files, then debounced so a burst of edits triggers a single model rebuild
+ * + re-render within 2 seconds (FR-013, SC-005; research R-03).
+ *
+ * T020 enforces read-only behavior: `save()` is a no-op so the view never
+ * writes to the vault, and the map exposes no editing affordances (FR-015,
+ * FR-017, SC-004).
+ *
  * NOTE: The full 2D grid rendering is provided by T011
  * (`board-renderer.ts`); this view creates the map container and a
  * placeholder that T011 replaces.
@@ -20,6 +29,7 @@ import {
 	FileView,
 	Plugin,
 	TextFileView,
+	TAbstractFile,
 	TFile,
 	WorkspaceLeaf,
 	setIcon,
@@ -28,6 +38,7 @@ import { t } from '../i18n/en';
 import { readBoardConfig, parseBoardEntries } from './board-parser';
 import { buildGridModel } from './board-model';
 import { BoardRenderer } from './board-renderer';
+import { debounce, type DebouncedFn } from '../utils/debounce';
 import type { GridModel } from '../types';
 
 /** Custom view type for the board view (stable once released). */
@@ -52,9 +63,23 @@ export class BoardView extends TextFileView {
 	/** The pane header toggle action element (for icon/title updates). */
 	private toggleActionEl: HTMLElement | null = null;
 
+	/**
+	 * Debounced map refresh (T019, FR-013). Coalesces bursts of
+	 * metadata/vault change events into a single model rebuild + re-render.
+	 */
+	private refreshDebounced: DebouncedFn<[]>;
+
+	/**
+	 * Paths of the notes that affect this map: the board file plus every
+	 * linked story file (T019). Used to filter change events so edits to
+	 * unrelated notes never trigger a re-render.
+	 */
+	private relevantPaths: Set<string> = new Set();
+
 	constructor(leaf: WorkspaceLeaf) {
 		super(leaf);
 		this.icon = 'layout-dashboard';
+		this.refreshDebounced = debounce(() => this.refreshMap(), 250);
 	}
 
 	getViewType(): string {
@@ -81,8 +106,22 @@ export class BoardView extends TextFileView {
 	clear(): void {
 		this.data = '';
 		this.model = null;
+		this.relevantPaths = new Set();
 		this.mapContainerEl?.empty();
 		this.mapContainerEl = null;
+	}
+
+	/**
+	 * Read-only enforcement (T020, FR-015, FR-017): the view never writes
+	 * to the vault. `TextFileView.save()` would persist `this.data` back to
+	 * the file, but the map is a read-only projection — all editing happens
+	 * in the standard Markdown editor. Overriding `save()` as a no-op
+	 * guarantees the board note and story notes are never modified by the
+	 * plugin, so the board note remains a readable, bulleted list of links
+	 * in standard Markdown even after the plugin is disabled.
+	 */
+	async save(_clear?: boolean): Promise<void> {
+		// Intentionally empty — the view is read-only.
 	}
 
 	// --- Lifecycle ---
@@ -90,9 +129,11 @@ export class BoardView extends TextFileView {
 	protected async onOpen(): Promise<void> {
 		await super.onOpen();
 		this.registerToggleAction();
+		this.registerLiveUpdateEvents();
 	}
 
 	protected async onClose(): Promise<void> {
+		this.refreshDebounced.cancel();
 		this.toggleActionEl = null;
 		this.mapContainerEl = null;
 		await super.onClose();
@@ -170,6 +211,7 @@ export class BoardView extends TextFileView {
 	private resetToMarkdownMode(): void {
 		this.mode = 'markdown';
 		this.model = null;
+		this.relevantPaths = new Set();
 		this.mapContainerEl = null;
 		this.render();
 		this.updateToggleAction();
@@ -216,9 +258,27 @@ export class BoardView extends TextFileView {
 		const entries = parseBoardEntries(this.app, file);
 		this.model = buildGridModel(config, entries);
 
+		// Track the board file + every linked story file so live-update
+		// events can be filtered to only the notes that affect this map
+		// (T019, FR-013). Broken links have no targetPath and are skipped.
+		this.relevantPaths = new Set([file.path]);
+		for (const entry of entries) {
+			if (entry.targetPath !== null) {
+				this.relevantPaths.add(entry.targetPath);
+			}
+		}
+
 		this.contentEl.empty();
 		const container = this.contentEl.createDiv({ cls: 'usm-board-map' });
 		this.mapContainerEl = container;
+
+		// Read-only (T020, FR-015): suppress the native context menu on the
+		// map so no mutation actions (cut/copy/paste, etc.) are offered.
+		// The map is a navigation surface; editing happens in the standard
+		// Markdown editor.
+		container.addEventListener('contextmenu', (evt) => {
+			evt.preventDefault();
+		});
 
 		// Wikilink attribute headers open their linked note (FR-007). The
 		// source path is the board file so relative link targets resolve.
@@ -229,6 +289,68 @@ export class BoardView extends TextFileView {
 			void this.app.workspace.openLinkText(linkPath, this.file.path);
 		};
 		new BoardRenderer(container, openLink).render(this.model);
+	}
+
+	// --- Live updates (T019, FR-013, SC-005) ---
+
+	/**
+	 * Register the change events that drive live map updates (T019).
+	 *
+	 * `metadataCache.on('changed')` fires when a note's metadata is
+	 * re-indexed (the primary signal); `vault.on('modify')` is a fallback
+	 * for content changes. Both are filtered to the board file and its
+	 * linked story files, then debounced so a burst of edits triggers a
+	 * single model rebuild + re-render (research R-03, FR-013).
+	 */
+	private registerLiveUpdateEvents(): void {
+		this.registerEvent(
+			this.app.metadataCache.on('changed', (file) => {
+				this.handleFileChange(file);
+			}),
+		);
+		this.registerEvent(
+			this.app.vault.on('modify', (file) => {
+				this.handleFileChange(file);
+			}),
+		);
+	}
+
+	/**
+	 * Handle a file change: if the changed note affects this map and the
+	 * map is visible, schedule a debounced refresh (T019).
+	 *
+	 * `vault.on('modify')` passes a `TAbstractFile` (which may be a folder),
+	 * so the parameter is widened to `TAbstractFile`; only the `path` is read.
+	 */
+	private handleFileChange(file: TAbstractFile): void {
+		if (this.mode !== 'map') {
+			return;
+		}
+		if (this.file === null) {
+			return;
+		}
+		if (!this.relevantPaths.has(file.path)) {
+			return;
+		}
+		this.refreshDebounced();
+	}
+
+	/**
+	 * Rebuild the grid model from the metadata cache and re-render the map
+	 * (T019). The model is rebuilt from scratch — cheap, in-memory only —
+	 * and the DOM is re-rendered (research R-03).
+	 */
+	private refreshMap(): void {
+		if (this.mode !== 'map') {
+			return;
+		}
+		if (this.file === null) {
+			return;
+		}
+		if (!this.isBoardFile(this.file)) {
+			return;
+		}
+		this.renderMap();
 	}
 
 	// --- Pane header toggle ---

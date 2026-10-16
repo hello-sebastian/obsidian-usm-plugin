@@ -41,6 +41,13 @@
  * - no errors are thrown and no intrusive notifications are shown —
  *   incomplete data degrades gracefully.
  *
+ * T020 enforces read-only behavior (FR-015, FR-017, SC-004): the renderer
+ * emits no editing affordances — no drag handles, no inline-edit inputs,
+ * no context-menu mutations. The only interactive elements are the
+ * navigation affordances (clickable wikilink headers and story cards that
+ * open their note in the standard view). The map is a read-only projection
+ * of the Markdown source; all editing happens in the standard editor.
+ *
  * All note-derived strings are inserted as text nodes (FR-016) — never
  * via `innerHTML` — so note content can never execute as markup.
  */

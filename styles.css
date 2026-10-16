@@ -7,7 +7,11 @@ cards) is completed in T024; this file currently covers the board view
 container and the read-only source view (T010).
 */
 
-/* Board map container: single scroll container (research R-04). */
+/* Board map container: single scroll container (research R-04).
+Read-only (T020, FR-015): the map is a projection of the Markdown source —
+no editing affordances. Text is not selectable (the map is a navigation
+surface, not a document) and the native context menu is suppressed by the
+view so no mutation actions are offered. */
 .usm-board-map {
 	position: relative;
 	width: 100%;
@@ -15,6 +19,8 @@ container and the read-only source view (T010).
 	overflow: auto;
 	padding: var(--size-4-3);
 	background-color: var(--background-primary);
+	user-select: none;
+	-webkit-user-select: none;
 }
 
 .usm-board-map-heading {
