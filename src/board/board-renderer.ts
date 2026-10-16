@@ -1,5 +1,5 @@
 /**
- * Map renderer (T011, extended by T013).
+ * Map renderer (T011, extended by T013, T014, T016).
  *
  * Renders a {@link GridModel} into the board view's map container: a
  * single scroll container (`overflow: auto` on both axes) holding a CSS
@@ -18,9 +18,11 @@
  * makes the header a clickable, keyboard-accessible link that opens the
  * linked note; a plain-text value renders as an inert visual label (FR-007).
  *
+ * T016 replaces the base card with the full story card from
+ * `story-card.ts` (T015): clamped title, Release badge, click-to-open,
+ * keyboard access (FR-009, FR-010, FR-019).
+ *
  * Scope boundaries (later tasks extend this renderer):
- * - T015/T016 replace the base card with the full story card (title
- *   cascade, Release badge, click-to-open, keyboard access).
  * - T017 adds sticky headers; T018 adds "Unassigned" sections and
  *   broken-link placeholders.
  *
@@ -30,6 +32,7 @@
 import type { GridModel, StoryEntry } from '../types';
 import { UNASSIGNED, cellKey, normalizeKey } from '../types';
 import { t } from '../i18n/en';
+import { createStoryCard } from '../story/story-card';
 
 /**
  * One leaf column of the grid: a single Epic under a Task under an
@@ -259,17 +262,13 @@ export class BoardRenderer {
 	}
 
 	/**
-	 * Render a basic story card: title (text node) + empty footer.
-	 * The full card (title cascade, Release badge, click-to-open) is
-	 * provided by T015 (`story-card.ts`).
+	 * Render a story card via the `story-card.ts` component (T015, T016):
+	 * clamped title, Release badge, click-to-open, keyboard access
+	 * (FR-009, FR-010, FR-019). The card's open callback reuses the
+	 * renderer's `openLink` so cards and wikilink headers open notes the
+	 * same way.
 	 */
 	private renderCard(parent: HTMLElement, entry: StoryEntry): void {
-		const card = parent.createDiv({ cls: 'usm-story-card' });
-		const header = card.createDiv({ cls: 'usm-story-card-header' });
-		// Text-node insertion — the note-derived title can never run as
-		// markup (FR-016).
-		header.setText(entry.title);
-		// Empty footer; T015 adds the Release badge here.
-		card.createDiv({ cls: 'usm-story-card-footer' });
+		createStoryCard(parent, entry, this.openLink);
 	}
 }
