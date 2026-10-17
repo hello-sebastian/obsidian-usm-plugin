@@ -1,0 +1,46 @@
+# Changelog
+
+All notable changes to the **User Story Map** plugin are documented in this
+file. The format is based on
+[Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project
+adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [0.1.0] - 2026-10-17
+
+### Added
+
+- **Board view** — a note with `usm-board: true` in its frontmatter opens in
+  a dedicated 2D visual map view instead of the raw Markdown editor.
+- **2D grid layout** — columns grouped by Activity → Task → Epic (first
+  appearance order), one row per Release, rendered with CSS Grid.
+- **Sticky headers** — column headers stay pinned while scrolling vertically,
+  row headers while scrolling horizontally; the corner cell pins to both axes.
+- **Story cards** — clamped title (resolved via the `story` → `title` → alias
+  → file name cascade), Release badge in the footer, click / Enter / Space
+  opens the linked note in the standard view.
+- **Wikilink attribute headers** — an attribute value that is a wikilink
+  renders as a clickable, keyboard-accessible header that opens the linked
+  note.
+- **Unassigned sections** — stories missing any attribute (or with no
+  frontmatter at all) are grouped into a visually distinct "Unassigned"
+  section at that level; broken links render as dimmed placeholder cards.
+  Nothing crashes and no intrusive notifications are shown.
+- **PL/EN field synonyms** — `activity`/`aktywność`, `task`/`zadanie`,
+  `epic`/`epik`, `release`/`wydanie`/`row` are recognized
+  (case-insensitive); value matching is case-insensitive.
+- **Live updates** — the map re-renders automatically (debounced) when the
+  board file or any linked story file changes; no reload required.
+- **Read-only guarantee** — the map is a projection of the Markdown source;
+  the plugin never writes to board or story files, and the map / Markdown
+  toggle never modifies the file.
+- **Commands** — "Open as User Story Map" and "Open as Markdown".
+- **Debug mode** — a plugin setting that shows a metrics overlay on the map
+  view (FPS, rendered story count, last render duration in ms).
+- **XSS hardening** — every note-derived string is inserted as a text node or
+  escaped; note content can never execute as markup.
+- **Mobile-friendly sizing** — responsive column widths keep the map usable on
+  small screens.
+- **Automated test suite** — unit, integration, and performance tests running
+  in Node.js against versioned fixtures (no Obsidian instance required).
+
+[0.1.0]: https://github.com/obsidian-usm-plugin/releases/tag/0.1.0

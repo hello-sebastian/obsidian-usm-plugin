@@ -21,6 +21,11 @@ export const en: Record<string, string> = {
 	// View display text (tab title suffix / aria)
 	'view.board': 'User Story Map',
 
+	// Settings tab (T021)
+	'settings.debug-mode': 'Debug mode',
+	'settings.debug-mode.desc':
+		'Show rendering metrics (fps, story count, render time) on the map view.',
+
 	// Debug panel labels (used by the debug/dev mode, FR-020)
 	'debug.fps': 'FPS',
 	'debug.stories': 'Stories',

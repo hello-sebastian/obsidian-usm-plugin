@@ -1,92 +1,178 @@
-# Obsidian Sample Plugin
+# User Story Map for Obsidian
 
-This is a sample plugin for Obsidian (https://obsidian.md).
+Renders a board note as a **2D visual user story map**: columns grouped by
+**Activity → Task → Epic**, rows by **Release**. The map is a read-only,
+auto-updating projection of your Markdown — the source file is never
+modified, and with the plugin disabled it remains a plain, readable list of
+links.
 
-This project uses TypeScript to provide type checking and documentation.
-The repo depends on the latest plugin API (obsidian.d.ts) in TypeScript Definition format, which contains TSDoc comments describing what it does.
+## Screenshots
 
-This sample plugin demonstrates some of the basic functionality the plugin API can do.
+| Map view | Debug mode |
+|----------|------------|
+| ![User story map view](docs/screenshots/map-view.png) | ![Debug metrics panel](docs/screenshots/debug-panel.png) |
 
-- Adds a ribbon icon, which shows a Notice when clicked.
-- Adds a command "Open modal (simple)" which opens a Modal.
-- Adds a plugin setting tab to the settings page.
-- Registers a global click event and outputs a Notice on click.
-- Registers a global interval which logs 'setInterval' to the console.
+> Screenshots are captured from a real Obsidian instance (Desktop). Replace
+> the files in `docs/screenshots/` with your own captures before release.
 
-## First time developing plugins?
+## Features
 
-Quick starting guide for new plugin devs:
+- **2D grid** — hierarchical column headers (Activity → Task → Epic) and one
+  row per Release, laid out with CSS Grid (no manual geometry).
+- **Sticky headers** — column headers stay pinned while scrolling down, row
+  headers while scrolling right; the corner cell pins to both.
+- **Read-only by design** — the map is a navigation surface. Click a card (or
+  a wikilink header) to open the linked note in the standard view. All
+  editing happens in the editor.
+- **Live updates** — edit a story's frontmatter or add a wikilink to the
+  board and the map re-renders automatically (debounced), no reload needed.
+- **Incomplete-data resilience** — a story missing any attribute (or with no
+  frontmatter at all) is grouped into a dedicated **Unassigned** section at
+  that level. Broken links render as dimmed placeholder cards. Nothing
+  crashes, nothing is written.
+- **PL/EN field synonyms** — `activity`/`aktywność`, `task`/`zadanie`,
+  `epic`/`epik`, `release`/`wydanie`/`row` are all recognized
+  (case-insensitive).
+- **XSS-safe** — every note-derived string is inserted as a text node; note
+  content can never execute as markup.
+- **100% local** — no network calls, no telemetry, no data leaves the vault.
+- **Mobile-friendly** — responsive column sizing keeps the map usable on
+  phones and tablets.
 
-- Check if [someone already developed a plugin for what you want](https://obsidian.md/plugins)! There might be an existing plugin similar enough that you can partner up with.
-- Make a copy of this repo as a template with the "Use this template" button (login to GitHub if you don't see it).
-- Clone your repo to a local development folder. For convenience, you can place this folder in your `.obsidian/plugins/your-plugin-name` folder.
-- Install NodeJS, then run `npm i` in the command line under your repo folder.
-- Run `npm run dev` to compile your plugin from `src/main.ts` to `main.js`.
-- Make changes to `src/main.ts` (or create new `.ts` files). Those changes should be automatically compiled into `main.js`.
-- Reload Obsidian to load the new version of your plugin.
-- Enable plugin in settings window.
-- For updates to the Obsidian API run `npm update` in the command line under your repo folder.
+## Installation
 
-## Releasing new releases
+### From the community plugin list
 
-- Update your `manifest.json` with your new version number, such as `1.0.1`, and the minimum Obsidian version required for your latest release.
-- Update your `versions.json` file with `"new-plugin-version": "minimum-obsidian-version"` so older versions of Obsidian can download an older version of your plugin that's compatible.
-- Create new GitHub release using your new version number as the "Tag version". Use the exact version number, don't include a prefix `v`. See here for an example: https://github.com/obsidianmd/obsidian-sample-plugin/releases
-- Upload the files `manifest.json`, `main.js`, `styles.css` as binary attachments. Note: The manifest.json file must be in two places, first the root path of your repository and also in the release.
-- Publish the release.
+1. In Obsidian: **Settings → Community plugins** (turn off Restricted mode if
+   prompted).
+2. Select **Browse** and search for **User Story Map**.
+3. Select **Install**, then **Enable**.
 
-> You can simplify the version bump process by running `npm version patch`, `npm version minor` or `npm version major` after updating `minAppVersion` manually in `manifest.json`.
-> The command will bump version in `manifest.json` and `package.json`, and add the entry for the new version to `versions.json`
+### Manual
 
-## Adding your plugin to the community plugin list
+1. Build the plugin (see [Development](#development)) or download the release
+   assets.
+2. Copy `main.js`, `manifest.json`, and `styles.css` into
+   `<Vault>/.obsidian/plugins/obsidian-usm-plugin/`.
+3. In Obsidian: **Settings → Community plugins** → enable **User Story Map**.
 
-- Check the [plugin guidelines](https://docs.obsidian.md/Plugins/Releasing/Plugin+guidelines).
-- Publish an initial version.
-- Make sure you have a `README.md` file in the root of your repo.
-- Make a pull request at https://github.com/obsidianmd/obsidian-releases to add your plugin.
+## Usage
 
-## How to use
+### 1. Create a board note
 
-- Clone this repo.
-- Make sure your NodeJS is at least v18 (`node --version`).
-- `npm i` to install dependencies.
-- `npm run dev` to start compilation in watch mode.
+A board is any note whose frontmatter contains `usm-board: true`. The body is
+an ordered list of wikilinks — one story per line:
 
-## Manually installing the plugin
+```markdown
+---
+usm-board: true
+usm-release-order: appearance
+---
 
-- Copy over `main.js`, `styles.css`, `manifest.json` to your vault `VaultFolder/.obsidian/plugins/your-plugin-id/`.
-
-## Improve code quality with eslint
-
-- [ESLint](https://eslint.org/) is a tool that analyzes your code to quickly find problems. You can run ESLint against your plugin to find common bugs and ways to improve your code.
-- This project already has eslint preconfigured, you can invoke a check by running`npm run lint`
-- Together with a custom eslint [plugin](https://github.com/obsidianmd/eslint-plugin) for Obsidan specific code guidelines.
-- A GitHub action is preconfigured to automatically lint every commit on all branches.
-
-## Funding URL
-
-You can include funding URLs where people who use your plugin can financially support it.
-
-The simple way is to set the `fundingUrl` field to your link in your `manifest.json` file:
-
-```json
-{
-	"fundingUrl": "https://buymeacoffee.com"
-}
+- [[S1]]
+- [[S2]]
+- [[S1]]
+- [[Missing story]]
 ```
 
-If you have multiple URLs, you can also do:
+| Frontmatter attribute | Type | Default | Description |
+|-----------------------|------|---------|-------------|
+| `usm-board` | boolean | — | Required. Only `true` activates the map view. |
+| `usm-release-order` | string | `appearance` | `appearance` (order of first appearance) or `alphabetical` (case-insensitive sort). Unknown values fall back to `appearance`. |
 
-```json
-{
-	"fundingUrl": {
-		"Buy Me a Coffee": "https://buymeacoffee.com",
-		"GitHub Sponsor": "https://github.com/sponsors",
-		"Patreon": "https://www.patreon.com/"
-	}
-}
+Rules:
+
+- **Order matters** — the wikilink sequence defines the column grouping order
+  (Activity → Task → Epic) and the default Release row order.
+- **Duplicates are allowed** — each occurrence renders a separate card.
+- **Broken links** (target note does not exist) render a dimmed placeholder
+  card; the map never crashes.
+- Non-wikilink lines (headers, text, comments) are ignored.
+
+### 2. Add attributes to story notes
+
+Each story note's frontmatter positions it on the map:
+
+```markdown
+---
+activity: Onboarding
+task: First run
+epic: "[[Onboarding flow]]"
+release: "1.0 MVP"
+story: Create first board
+---
+
+As a user I want to create my first board so that I can map my user journey.
 ```
 
-## API Documentation
+| Attribute | Accepted names (case-insensitive) | Role |
+|-----------|-----------------------------------|------|
+| Activity | `activity`, `aktywność` | Top-level column group |
+| Task | `task`, `zadanie` | Second-level column group |
+| Epic | `epic`, `epik` | Third-level column group |
+| Release | `release`, `wydanie`, `row` | Row; also the card footer badge |
+| Story | `story` | Explicit card title (first in the cascade) |
+| Title | `title` | Card title fallback (second in the cascade) |
 
-See https://docs.obsidian.md
+- **Value matching is case-insensitive** — `Login` and `login` group
+  together.
+- **Wikilink values** (e.g. `epic: "[[Onboarding flow]]"`) render as
+  clickable headers that open the linked note.
+- **Missing attributes** place the story in the **Unassigned** section at that
+  level — no error, no crash.
+- The note **body is not rendered** on the map in the MVP; the card shows the
+  title and the Release badge only.
+
+### Card title cascade
+
+The card title is resolved in this order (first non-empty value wins):
+
+1. `story` frontmatter attribute
+2. `title` frontmatter attribute
+3. First alias of the note
+4. File name (without extension)
+
+### 3. Open the map
+
+Open the board note — it renders in the visual map view automatically. Toggle
+to the raw Markdown with the pane header icon or the **Open as Markdown**
+command, and back with **Open as User Story Map**. The file content is never
+modified by the toggle.
+
+## Commands
+
+| Command | Description |
+|---------|-------------|
+| **Open as User Story Map** | Render the current board note as the map. |
+| **Open as Markdown** | Show the board note as raw Markdown. |
+
+## Settings
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| **Debug mode** | off | Shows a metrics overlay on the map view: FPS, rendered story count, and last render duration (ms). |
+
+## Development
+
+```bash
+npm install        # install dependencies
+npm run dev        # compile in watch mode (src/main.ts → main.js)
+npm run build      # type-check + production build
+npm run lint       # ESLint (eslint-plugin-obsidianmd)
+npm test           # full suite: unit + integration + performance
+npm run test:unit       # core logic (parser, attributes, model, sanitize)
+npm run test:integration  # full pipeline against the fixtures
+npm run test:perf       # render performance on a defined board size
+```
+
+The automated suite runs in Node.js (no Obsidian instance required) against
+the versioned fixtures in `tests/fixtures/`.
+
+## Privacy
+
+The plugin operates 100% locally. It makes no network requests, collects no
+telemetry, and never sends vault content or note metadata anywhere.
+
+## License
+
+[0-BSD](LICENSE)

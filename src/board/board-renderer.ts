@@ -128,11 +128,15 @@ export class BoardRenderer {
 	private renderGrid(model: GridModel, grid: HTMLElement): void {
 		const epicColumns = this.flattenEpicColumns(model);
 		grid.setCssProps({
-			// Data columns size to their content (min 160px) so a single
-			// long title does not inflate every column (T017). The grid
-			// itself is width: max-content (styles.css), which is what lets
-			// the row headers stick horizontally.
-			'--usm-grid-cols': `minmax(140px, auto) repeat(${epicColumns.length}, minmax(160px, max-content))`,
+			// Data columns size to their content (min --usm-col-min, default
+			// 160px) so a single long title does not inflate every column
+			// (T017). The row-header column uses --usm-rowheader-w (default
+			// 140px). Both are CSS custom properties defined in styles.css so
+			// a mobile media query can shrink them for small screens (T024)
+			// without changing this geometry logic. The grid itself is
+			// width: max-content (styles.css), which is what lets the row
+			// headers stick horizontally.
+			'--usm-grid-cols': `minmax(var(--usm-rowheader-w, 140px), auto) repeat(${epicColumns.length}, minmax(var(--usm-col-min, 160px), max-content))`,
 			// The three column-header rows have a fixed height
 			// (--usm-header-h, styles.css) so the sticky top offsets are
 			// known; release rows size to their content (T017).

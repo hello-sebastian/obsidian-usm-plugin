@@ -36,96 +36,7 @@ import type { App, TFile } from 'obsidian';
 
 import { BoardView } from '../../src/board/board-view';
 import { BoardRenderer } from '../../src/board/board-renderer';
-
-// --- Obsidian HTMLElement extensions (patched onto jsdom) -------------------
-
-/**
- * Obsidian augments `HTMLElement` with convenience methods the renderer and
- * story-card rely on. jsdom's native `HTMLElement` lacks them, so patch the
- * prototype once before any view is built.
- */
-function patchHTMLElement(): void {
-	const proto = HTMLElement.prototype as unknown as Record<string, unknown>;
-	if (proto.__usmPatched) {
-		return;
-	}
-	proto.__usmPatched = true;
-
-	const applyOpts = (el: HTMLElement, opts: Record<string, unknown>): void => {
-		if (!opts) {
-			return;
-		}
-		if (typeof opts.cls === 'string') {
-			el.classList.add(opts.cls);
-		}
-		if (typeof opts.text === 'string') {
-			el.textContent = opts.text;
-		}
-		if (typeof opts.title === 'string') {
-			el.title = opts.title;
-		}
-		if (opts.attr && typeof opts.attr === 'object') {
-			for (const [k, v] of Object.entries(opts.attr as Record<string, string>)) {
-				el.setAttribute(k, v);
-			}
-		}
-	};
-
-	proto.empty = function (this: HTMLElement): void {
-		while (this.firstChild) {
-			this.removeChild(this.firstChild);
-		}
-	};
-	proto.createEl = function (
-		this: HTMLElement,
-		tag: string,
-		opts: Record<string, unknown> = {},
-	): HTMLElement {
-		const el = document.createElement(tag);
-		applyOpts(el, opts);
-		this.appendChild(el);
-		return el;
-	};
-	proto.createDiv = function (
-		this: HTMLElement,
-		opts: Record<string, unknown> = {},
-	): HTMLElement {
-		return this.createEl('div', opts);
-	};
-	proto.createSpan = function (
-		this: HTMLElement,
-		opts: Record<string, unknown> = {},
-	): HTMLElement {
-		return this.createEl('span', opts);
-	};
-	proto.setText = function (this: HTMLElement, text: string): void {
-		this.empty();
-		if (text) {
-			this.appendChild(document.createTextNode(text));
-		}
-	};
-	proto.addClass = function (this: HTMLElement, cls: string): void {
-		this.classList.add(cls);
-	};
-	proto.removeClass = function (this: HTMLElement, cls: string): void {
-		this.classList.remove(cls);
-	};
-	proto.toggleClass = function (
-		this: HTMLElement,
-		cls: string,
-		force?: boolean,
-	): void {
-		this.classList.toggle(cls, force);
-	};
-	proto.setCssProps = function (
-		this: HTMLElement,
-		props: Record<string, string>,
-	): void {
-		for (const [k, v] of Object.entries(props)) {
-			this.style.setProperty(k, v);
-		}
-	};
-}
+import { patchHTMLElement } from '../helpers/dom-patch';
 
 // --- Mock vault app (dynamic metadata cache) --------------------------------
 
@@ -304,7 +215,9 @@ async function setupView(
 		[UNRELATED]: '# Unrelated note\n',
 	});
 	const leaf = { app: vault.app };
-	const view = new BoardView(leaf as never);
+	// Debug mode is off in the test harness (T022 changed the constructor
+	// to take a `getDebugMode` getter).
+	const view = new BoardView(leaf as never, () => false);
 	view.file = vault.file(BOARD);
 	view.data = boardContent(boardLinks);
 	await view.onLoadFile(vault.file(BOARD));

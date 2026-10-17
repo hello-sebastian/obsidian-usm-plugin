@@ -171,14 +171,14 @@ description: "Task list for User Story Map Board View"
 
 **Purpose**: Improvements that affect multiple user stories
 
-- [ ] T021 [P] Add the `debugMode` plugin setting (boolean, default `false`) in `src/settings.ts` and expose it in the settings tab via `SettingTab`
-- [ ] T022 Implement the debug/dev panel in `src/debug/debug-panel.ts` — when `debugMode` is enabled and the map view is visible, show an overlay with: fps (measured via `requestAnimationFrame` deltas), number of rendered story cards, last render duration in ms; start/stop the measurement loop only while active and clean it up on view close or toggle-off (FR-020, SC-001; research R-07) (depends on T021)
-- [ ] T023 [P] XSS hardening audit across `src/board/board-renderer.ts`, `src/story/story-card.ts`, and `src/board/board-view.ts` — verify every note-derived string (titles, attribute values, badges, link text) is inserted as a text node or escaped via `src/utils/sanitize.ts`; no `innerHTML` with note data anywhere (FR-016; quickstart Q8)
-- [ ] T033 [P] Write unit tests for XSS sanitization in `tests/unit/sanitize.test.ts` — verify that note-derived strings containing HTML markup (`<img src=x onerror=alert(1)>`), script tags, and event handler attributes are neutralized (rendered as inert text, never executed); test the escape function output for special characters (`<`, `>`, `&`, `"`, `'`); verify the text-node insertion path (no `innerHTML` with note data) (FR-016; quickstart Q8)
-- [ ] T034 Write automated performance tests in `tests/performance/render-perf.test.ts` — build a `GridModel` from a defined board size (≥ 10 columns × ≥ 5 rows × ≥ 50 stories), measure: model build time (ms), DOM render time (ms, using jsdom — dev-only dependency, see plan.md Technical Context), and story card count; record baseline thresholds on first passing run and enforce them on subsequent runs (fail if regression exceeds 20%); the suite must complete in under 2 minutes total (FR-020, FR-024, SC-001, SC-010; depends on T027, T028)
-- [ ] T024 [P] Complete the map styling in `styles.css` — use Obsidian CSS variables (`var(--text-normal)`, `var(--background-primary)`, etc.) for full light/dark theme adaptation, card styling, sticky-header offsets, and mobile-friendly sizing (Constitution Principles I, IV)
+- [X] T021 [P] Add the `debugMode` plugin setting (boolean, default `false`) in `src/settings.ts` and expose it in the settings tab via `SettingTab`
+- [X] T022 Implement the debug/dev panel in `src/debug/debug-panel.ts` — when `debugMode` is enabled and the map view is visible, show an overlay with: fps (measured via `requestAnimationFrame` deltas), number of rendered story cards, last render duration in ms; start/stop the measurement loop only while active and clean it up on view close or toggle-off (FR-020, SC-001; research R-07) (depends on T021)
+- [X] T023 [P] XSS hardening audit across `src/board/board-renderer.ts`, `src/story/story-card.ts`, and `src/board/board-view.ts` — verify every note-derived string (titles, attribute values, badges, link text) is inserted as a text node or escaped via `src/utils/sanitize.ts`; no `innerHTML` with note data anywhere (FR-016; quickstart Q8)
+- [X] T033 [P] Write unit tests for XSS sanitization in `tests/unit/sanitize.test.ts` — verify that note-derived strings containing HTML markup (`<img src=x onerror=alert(1)>`), script tags, and event handler attributes are neutralized (rendered as inert text, never executed); test the escape function output for special characters (`<`, `>`, `&`, `"`, `'`); verify the text-node insertion path (no `innerHTML` with note data) (FR-016; quickstart Q8)
+- [X] T034 Write automated performance tests in `tests/performance/render-perf.test.ts` — build a `GridModel` from a defined board size (≥ 10 columns × ≥ 5 rows × ≥ 50 stories), measure: model build time (ms), DOM render time (ms, using jsdom — dev-only dependency, see plan.md Technical Context), and story card count; record baseline thresholds on first passing run and enforce them on subsequent runs (fail if regression exceeds 20%); the suite must complete in under 2 minutes total (FR-020, FR-024, SC-001, SC-010; depends on T027, T028)
+- [X] T024 [P] Complete the map styling in `styles.css` — use Obsidian CSS variables (`var(--text-normal)`, `var(--background-primary)`, etc.) for full light/dark theme adaptation, card styling, sticky-header offsets, and mobile-friendly sizing (Constitution Principles I, IV)
 - [ ] T025 Run the full validation suite from `specs/001-user-story-map/quickstart.md` — scenarios Q1–Q10 on Desktop and Q10 on at least one mobile device; fix any failures
-- [ ] T026 [P] Update `README.md` (usage instructions, board/story file format examples, and real screenshots of the map view — the Constitution requires a README with screenshots, so capture actual screenshots before release; do not ship a placeholder) and create `CHANGELOG.md` with the initial release entry (Constitution: documentation quality)
+- [X] T026 [P] Update `README.md` (usage instructions, board/story file format examples, and real screenshots of the map view — the Constitution requires a README with screenshots, so capture actual screenshots before release; do not ship a placeholder) and create `CHANGELOG.md` with the initial release entry (Constitution: documentation quality)
 
 ---
 
@@ -279,3 +279,9 @@ With multiple developers:
 - Commit after each task or logical group
 - Stop at any checkpoint to validate story independence before proceeding
 - The automated test suite must pass (under 2 minutes) before any release (SC-010)
+
+---
+
+## Phase 10: Convergence
+
+- [X] T035 Capture and commit real map-view and debug-panel screenshots to `docs/screenshots/` (`map-view.png`, `debug-panel.png`) so the README's screenshot references resolve, per Constitution (Documentation quality) + T026 (partial)

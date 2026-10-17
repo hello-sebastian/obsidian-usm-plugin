@@ -241,3 +241,86 @@ No hover or focus affordances — there is no note to open. */
 	white-space: pre-wrap;
 	background-color: var(--background-primary);
 }
+
+/* Debug/dev metrics panel (T022, FR-020). A small overlay pinned to the
+bottom-right of the map view container. It is only present while debug
+mode is enabled and the map is rendered, so it never interferes with the
+map otherwise. Uses Obsidian CSS variables for theme adaptation
+(Constitution Principle I). */
+.usm-debug-panel {
+	position: absolute;
+	right: var(--size-4-2);
+	bottom: var(--size-4-2);
+	z-index: 10;
+	display: flex;
+	flex-direction: column;
+	gap: var(--size-4-1);
+	padding: var(--size-4-2) var(--size-4-3);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-m);
+	background-color: var(--background-secondary);
+	color: var(--text-muted);
+	font-family: var(--font-monospace);
+	font-size: var(--font-smaller);
+	pointer-events: none;
+	user-select: none;
+	-webkit-user-select: none;
+}
+
+.usm-debug-row {
+	display: flex;
+	justify-content: space-between;
+	gap: var(--size-4-3);
+}
+
+.usm-debug-label {
+	color: var(--text-faint);
+}
+
+.usm-debug-value {
+	color: var(--text-normal);
+	font-variant-numeric: tabular-nums;
+}
+
+/* ---------------------------------------------------------------------------
+Mobile-friendly sizing (T024, Constitution Principle IV).
+
+The grid geometry is driven by two CSS custom properties that the renderer
+consumes (board-renderer.ts): --usm-rowheader-w (width of the sticky
+row-header column) and --usm-col-min (minimum width of each Epic data
+column). They are declared here with desktop defaults so the stylesheet is
+the single source of truth for sizing; a media query below shrinks them on
+small screens so the map stays usable on phones/tablets (Q10) — fewer
+columns fit per screen, but the single scroll container still scrolls both
+axes and the sticky headers keep working. No hard colors are introduced, so
+light/dark theme adaptation (Principle I) is preserved.
+--------------------------------------------------------------------------- */
+:root {
+	--usm-rowheader-w: 140px;
+	--usm-col-min: 160px;
+}
+
+@media (max-width: 768px) {
+	:root {
+		--usm-rowheader-w: 96px;
+		--usm-col-min: 120px;
+	}
+
+	/* Tighten the map padding and card spacing on small screens so more of
+	the map is visible without scrolling. */
+	.usm-board-map {
+		padding: var(--size-4-2);
+	}
+
+	.usm-board-grid {
+		gap: var(--size-4-1);
+		/* Shrink the fixed column-header row height so the three header rows
+		take less vertical space; the sticky top offsets in the header rules
+		reference --usm-header-h, so they follow automatically. */
+		--usm-header-h: 24px;
+	}
+
+	.usm-story-card {
+		padding: var(--size-4-1);
+	}
+}

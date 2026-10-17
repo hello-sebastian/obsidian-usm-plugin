@@ -38,6 +38,7 @@ import { t } from '../i18n/en';
 import { readBoardConfig, parseBoardEntries } from './board-parser';
 import { buildGridModel } from './board-model';
 import { BoardRenderer } from './board-renderer';
+import { DebugPanel } from '../debug/debug-panel';
 import { debounce, type DebouncedFn } from '../utils/debounce';
 import type { GridModel } from '../types';
 
@@ -76,9 +77,23 @@ export class BoardView extends TextFileView {
 	 */
 	private relevantPaths: Set<string> = new Set();
 
-	constructor(leaf: WorkspaceLeaf) {
+	/**
+	 * Returns whether debug mode is enabled (T022). Injected by the plugin
+	 * so the view reacts to the setting without a hard dependency on the
+	 * settings module.
+	 */
+	private readonly getDebugMode: () => boolean;
+
+	/** The debug metrics panel (present only while active, T022). */
+	private debugPanel: DebugPanel | null = null;
+
+	/** Duration of the last map render in ms (reported to the panel). */
+	private lastRenderMs = 0;
+
+	constructor(leaf: WorkspaceLeaf, getDebugMode: () => boolean) {
 		super(leaf);
 		this.icon = 'layout-dashboard';
+		this.getDebugMode = getDebugMode;
 		this.refreshDebounced = debounce(() => this.refreshMap(), 250);
 	}
 
@@ -109,6 +124,8 @@ export class BoardView extends TextFileView {
 		this.relevantPaths = new Set();
 		this.mapContainerEl?.empty();
 		this.mapContainerEl = null;
+		this.debugPanel?.stop();
+		this.debugPanel = null;
 	}
 
 	/**
@@ -134,6 +151,8 @@ export class BoardView extends TextFileView {
 
 	protected async onClose(): Promise<void> {
 		this.refreshDebounced.cancel();
+		this.debugPanel?.stop();
+		this.debugPanel = null;
 		this.toggleActionEl = null;
 		this.mapContainerEl = null;
 		await super.onClose();
@@ -242,6 +261,7 @@ export class BoardView extends TextFileView {
 			cls: 'usm-board-source',
 			text: this.data,
 		});
+		this.syncDebugPanel();
 	}
 
 	/**
@@ -288,7 +308,33 @@ export class BoardView extends TextFileView {
 			}
 			void this.app.workspace.openLinkText(linkPath, this.file.path);
 		};
+		// Measure the render duration for the debug panel (T022, FR-020).
+		const renderStart = performance.now();
 		new BoardRenderer(container, openLink).render(this.model);
+		this.lastRenderMs = performance.now() - renderStart;
+		this.syncDebugPanel();
+	}
+
+	/**
+	 * Sync the debug metrics panel with the current state (T022, FR-020).
+	 * The panel is shown only while debug mode is enabled AND the map is
+	 * rendered; otherwise it is stopped and removed so there is no
+	 * overhead when disabled (research R-07, quickstart Q7).
+	 */
+	private syncDebugPanel(): void {
+		const shouldShow = this.mode === 'map' && this.getDebugMode();
+		if (shouldShow) {
+			if (this.debugPanel === null) {
+				this.debugPanel = new DebugPanel(this.containerEl, () =>
+					this.contentEl.querySelectorAll('.usm-story-card').length,
+				);
+			}
+			this.debugPanel.start();
+			this.debugPanel.setRenderMs(this.lastRenderMs);
+		} else if (this.debugPanel !== null) {
+			this.debugPanel.stop();
+			this.debugPanel = null;
+		}
 	}
 
 	// --- Live updates (T019, FR-013, SC-005) ---
@@ -397,6 +443,28 @@ export class BoardView extends TextFileView {
 	/** The last built grid model (for the renderer / debug panel). */
 	getModel(): GridModel | null {
 		return this.model;
+	}
+
+	/**
+	 * Re-sync the debug panel with the current `debugMode` setting (T022).
+	 * Called when the setting changes so the panel appears/disappears
+	 * immediately without waiting for the next render (quickstart Q7).
+	 */
+	refreshDebugPanel(): void {
+		this.syncDebugPanel();
+	}
+}
+
+/**
+ * Re-sync the debug panel on every open board view (T022). Called by the
+ * settings tab when `debugMode` changes so the metrics overlay appears or
+ * disappears immediately (quickstart Q7).
+ */
+export function refreshBoardDebugPanels(app: App): void {
+	for (const leaf of app.workspace.getLeavesOfType(BOARD_VIEW_TYPE)) {
+		if (leaf.view instanceof BoardView) {
+			leaf.view.refreshDebugPanel();
+		}
 	}
 }
 
