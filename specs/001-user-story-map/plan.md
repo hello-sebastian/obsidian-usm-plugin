@@ -40,10 +40,13 @@ The plugin renders a board note (flagged with `usm-board: true`) as a 2D visual 
 | IV. UX/UI, ergonomics & incomplete data | ✅ PASS | Obsidian CSS variables; defensive "Unassigned" bucketing; 2D scroll with sticky headers; keyboard-accessible cards; non-intrusive error handling |
 | V. Performance, reactivity & large vaults | ✅ PASS | `metadataCache` only (no sync disk reads); event-driven with debounce; CSS Grid/Flexbox layout |
 | VI. Data portability & self-describing config | ✅ PASS | Board config in board file frontmatter; self-describing; survives sync/copy/reinstall; readable without plugin |
+| VII. Pragmatic architecture & anti-over-engineering | ✅ PASS | Strict 3-layer `src/domain/` / `src/obsidian/` / `src/ui/` structure; pure functions in `domain/` (zero Obsidian imports); no inline visual styling (geometry via `--usm-*` custom properties only, per v1.6.1 clarification); popout-window compatible (no global `document`); three-tier state allocation |
 
 **Gate result: PASS — no violations. No Complexity Tracking entries required.**
 
 **Post-design re-check (after Phase 1): PASS.** The design artifacts confirm compliance: `metadataCache`-only data access (R-02), event-driven debounced updates (R-03), CSS Grid + sticky headers with no manual geometry (R-04), text-node DOM insertion for XSS safety with zero added runtime dependencies (R-05), board config in board file frontmatter (R-08, contracts), English `en` label dictionary as i18n foundation (R-09), debug metrics gated behind a setting with proper cleanup (R-07), and a Vitest-based automated test suite with versioned fixtures covering the core logic, integration pipeline, and performance (R-13). No new violations introduced.
+
+**Post-amendment re-check (constitution v1.6.0 → v1.6.1): PASS.** After the constitution was amended to add Principle VII (Pragmatic Architecture & Anti-Over-Engineering), the implementation was re-analyzed and brought into compliance: (1) the source tree was restructured into the strict 3-layer layout `src/domain/` (pure functions, zero Obsidian imports) / `src/obsidian/` (API adapters: plugin lifecycle, settings, view, parser, attributes) / `src/ui/` (DOM rendering, cards, debug panel, label dictionary); (2) the "No Inline JS Styling" rule was clarified in a PATCH amendment (v1.6.1) — setting `--usm-*` CSS custom properties to encode structural grid geometry is permitted, while all visual styling remains exclusively in `styles.css` with Obsidian CSS variables; (3) a regression test (`tests/unit/inline-styling-guard.test.ts`) now statically enforces the rule across all `src/**/*.ts` files. No new violations introduced.
 
 ## Project Structure
 
@@ -65,24 +68,22 @@ specs/001-user-story-map/
 
 ```text
 src/
-├── main.ts                  # Plugin entry point: lifecycle, command registration, view registration
-├── settings.ts              # Plugin settings interface and defaults (existing, extended)
-├── types.ts                 # Shared TypeScript interfaces (BoardConfig, StoryAttributes, GridModel, etc.)
-├── board/
+├── domain/                  # Pure logic — zero Obsidian imports (Constitution Principle VII)
+│   ├── types.ts             # Shared TypeScript interfaces (BoardConfig, StoryAttributes, GridModel, etc.)
+│   ├── board-model.ts       # Builds in-memory grid model (columns: Activity→Task→Epic, rows: Release)
+│   ├── sanitize.ts          # XSS sanitization: strips HTML/script from note-derived strings
+│   └── debounce.ts          # Debounce/throttle utility for event-driven updates
+├── obsidian/                # Obsidian API adapters (may import `obsidian`)
+│   ├── main.ts              # Plugin entry point: lifecycle, command registration, view registration
+│   ├── settings.ts          # Plugin settings interface and defaults (existing, extended)
 │   ├── board-view.ts        # TextFileView subclass: dual-mode (raw Markdown ↔ visual map), pane header icon
 │   ├── board-parser.ts      # Parses board file: extracts wikilinks, reads frontmatter config attributes
-│   ├── board-model.ts       # Builds in-memory grid model (columns: Activity→Task→Epic, rows: Release)
-│   └── board-renderer.ts    # Renders grid DOM: CSS Grid layout, sticky headers, story cards
-├── story/
-│   ├── story-attributes.ts  # Reads/normalizes story frontmatter (case-insensitive, PL/EN synonyms)
-│   └── story-card.ts        # Individual story card: title cascade, Release badge, click handler
-├── i18n/
-│   └── en.ts                # English label dictionary (single locale for MVP; foundation for future i18n)
-├── debug/
-│   └── debug-panel.ts       # Debug/dev mode: fps counter, story count, render time metrics
-└── utils/
-    ├── debounce.ts          # Debounce/throttle utility for event-driven updates
-    └── sanitize.ts          # XSS sanitization: strips HTML/script from note-derived strings
+│   └── story-attributes.ts  # Reads/normalizes story frontmatter (case-insensitive, PL/EN synonyms)
+└── ui/                      # DOM rendering (no `obsidian` imports; element methods only)
+    ├── board-renderer.ts    # Renders grid DOM: CSS Grid layout, sticky headers, story cards
+    ├── story-card.ts        # Individual story card: title cascade, Release badge, click handler
+    ├── debug-panel.ts       # Debug/dev mode: fps counter, story count, render time metrics
+    └── en.ts                # English label dictionary (single locale for MVP; foundation for future i18n)
 
 # Tests (automated — FR-022, FR-023, FR-024)
 tests/
@@ -101,7 +102,7 @@ tests/
     └── README.md                # Fixture description and coverage matrix
 ```
 
-**Structure Decision**: Single-project Obsidian plugin layout. Code is split into focused modules by responsibility: `board/` (view, parser, model, renderer), `story/` (attributes, card), `i18n/` (label dictionary), `debug/` (metrics panel), `utils/` (shared helpers). `main.ts` remains minimal (lifecycle + registration only). A `tests/` directory contains automated unit, integration, and performance tests (Vitest) with versioned fixtures — tests are a first-class part of the MVP (FR-022–FR-024). The core logic modules (`board-parser`, `story-attributes`, `board-model`, `sanitize`) are designed as pure functions (no Obsidian API dependency) so they are directly unit-testable in Node.js; the integration tests exercise the full pipeline with fixture data; performance tests measure render smoothness on a defined board size.
+**Structure Decision**: Single-project Obsidian plugin layout with the strict 3-layer directory structure required by Constitution Principle VII: `domain/` (pure functions — types, grid model, sanitization, debounce — with zero Obsidian imports), `obsidian/` (API adapters — plugin lifecycle, settings, view, parser, story attributes), and `ui/` (DOM rendering — grid renderer, story cards, debug panel, label dictionary). Dependency flow is acyclic: `obsidian/` → `ui/` → `domain/`. `main.ts` remains minimal (lifecycle + registration only). A `tests/` directory contains automated unit, integration, and performance tests (Vitest) with versioned fixtures — tests are a first-class part of the MVP (FR-022–FR-024). The core logic modules (`board-model`, `sanitize`, `debounce`) are pure functions (no Obsidian API dependency) so they are directly unit-testable in Node.js; the integration tests exercise the full pipeline with fixture data; performance tests measure render smoothness on a defined board size.
 
 ## Complexity Tracking
 

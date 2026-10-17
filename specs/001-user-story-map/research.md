@@ -66,7 +66,7 @@ All NEEDS CLARIFICATION items from the Technical Context were resolved during th
 
 ## R-09: i18n foundation
 
-- **Decision**: All UI strings (section headers, "Unassigned" label, command names, icon tooltips, debug panel labels) are read from a single `en` dictionary module (`src/i18n/en.ts`). Code never hardcodes user-facing strings. The dictionary is a flat `Record<string, string>` keyed by semantic string IDs.
+- **Decision**: All UI strings (section headers, "Unassigned" label, command names, icon tooltips, debug panel labels) are read from a single `en` dictionary module (`src/ui/en.ts`). Code never hardcodes user-facing strings. The dictionary is a flat `Record<string, string>` keyed by semantic string IDs.
 - **Rationale**: Clarification session 2 (2026-10-15): MVP is English-only, but the dictionary mechanism is the agreed foundation for future multilingual support (additional locale files to be developed in later iterations).
 - **Alternatives considered**:
   - *Hardcoded strings*: rejected — the user explicitly requires the dictionary foundation in MVP.

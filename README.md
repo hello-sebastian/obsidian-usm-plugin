@@ -156,7 +156,7 @@ modified by the toggle.
 
 ```bash
 npm install        # install dependencies
-npm run dev        # compile in watch mode (src/main.ts → main.js)
+npm run dev        # compile in watch mode (src/obsidian/main.ts → main.js)
 npm run build      # type-check + production build
 npm run lint       # ESLint (eslint-plugin-obsidianmd)
 npm test           # full suite: unit + integration + performance
