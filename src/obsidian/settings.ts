@@ -10,7 +10,7 @@
  * active, so there is no overhead when disabled (FR-020, SC-001;
  * research R-07).
  */
-import { Setting, SettingTab } from 'obsidian';
+import { PluginSettingTab, Setting } from 'obsidian';
 import type UsmPlugin from './main';
 import { t } from '../ui/en';
 import { refreshBoardDebugPanels } from './board-view';
@@ -30,12 +30,19 @@ export const DEFAULT_SETTINGS: UsmSettings = {
 
 /**
  * Settings tab (T021) — exposes the `debugMode` toggle.
+ *
+ * Must extend `PluginSettingTab` (not the base `SettingTab`) and call
+ * `super(app, plugin)`: `Plugin.app.addSettingTab()` requires a
+ * `PluginSettingTab` and its constructor initializes internal state that
+ * Obsidian's settings UI relies on (using the base class crashes with
+ * `TypeError: Cannot read properties of undefined (reading 'refreshSearch')`
+ * when the plugin is enabled).
  */
-export class UsmSettingTab extends SettingTab {
+export class UsmSettingTab extends PluginSettingTab {
 	plugin: UsmPlugin;
 
 	constructor(plugin: UsmPlugin) {
-		super();
+		super(plugin.app, plugin);
 		this.plugin = plugin;
 	}
 

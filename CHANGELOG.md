@@ -21,6 +21,14 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   (adapters connecting Obsidian events to domain functions), and `src/ui/`
   (native DOM rendering and CSS class application). No behavioral change.
 
+### Fixed
+
+- **Plugin failed to load on enable** — the settings tab extended the base
+  `SettingTab` instead of `PluginSettingTab`, so Obsidian's `addSettingTab()`
+  crashed with `TypeError: Cannot read properties of undefined (reading
+  'refreshSearch')` when the plugin was enabled. The tab now extends
+  `PluginSettingTab` and calls `super(app, plugin)`.
+
 ## [0.1.0] - 2026-10-17
 
 ### Added
