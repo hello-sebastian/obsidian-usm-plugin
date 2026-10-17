@@ -26,6 +26,7 @@ This constitution governs the development, maintenance, and evolution of the **O
 - **Defensive data operations:** All data operations MUST be defensive — checking types, ranges, and attribute presence, with sensible default values and "graceful degradation" variants that do not block the operation of the whole plugin.
 - **Non-destructive file operations:** Changes made to note files MUST be performed defensively (e.g., via `vault.process()`), preventing data loss in the event of write conflicts.
 - **Diagnostic logging:** Errors SHOULD be logged in a way that aids diagnosis, without exposing private data.
+- **Popout Windows compatibility (Multi-window DOM context):** When creating DOM elements dynamically, code MUST use the target container's document context (`containerEl.ownerDocument`) instead of the global `document` object, ensuring full compatibility with detached Obsidian windows.
 
 ### III. Lifecycle, resource cleanup, and code quality
 
@@ -67,6 +68,21 @@ This constitution governs the development, maintenance, and evolution of the **O
 - **Portability and transferability:** The board file MUST be fully portable — the configuration survives synchronization, copying, and transfer between vaults and between devices, regardless of whether the plugin is installed, uninstalled, or updated.
 - **Readability without the plugin:** The board file MUST remain readable and interpretable by a user or an AI agent that has no access to the plugin, only to plain Markdown notes. The reader MUST be able to recognize the order of stories and releases, the way the content is interpreted, and the relationships between them based solely on the file's content.
 - **Reproducibility after reinstallation:** Reinstalling the plugin MUST reproduce the map view identically to before uninstallation — no data, configuration, or structure may be lost in the install → uninstall → reinstall cycle.
+- **Three-tier state architecture:** Plugin state MUST be strictly categorized into three levels: (1) Global configuration stored in `data.json`, (2) Board structure and domain configuration stored in the board note's frontmatter, and (3) Ephemeral UI state (e.g., scroll position, active panel zoom) held purely in-memory within the view instance.`
+
+### VII. Pragmatic Architecture & Anti-Over-Engineering (AI Guardrails)
+
+- **Pure Functions over Class Hierarchies:** Domain logic MUST be implemented using simple, exported pure functions rather than complex class hierarchies, factories, or dependency injection frameworks.
+- **Strict 3-Layer Directory Structure:** Code MUST strictly adhere to three directory boundaries:
+  1. `src/domain/` — Pure TypeScript data transformations and matrix calculations (Zero Obsidian imports allowed).
+  2. `src/obsidian/` — Adapters connecting Obsidian events (`metadataCache`, `vault`) to domain functions.
+  3. `src/ui/` — Native DOM rendering and CSS class application.
+- **No Inline JS Styling:** Direct manipulation of `element.style` in JS is forbidden. All styling MUST use CSS classes defined in `styles.css` relying on Obsidian CSS variables.
+- **Popout Window Compatibility:** Dynamic DOM element creation MUST use the container's document context (`containerEl.ownerDocument`) instead of the global `document` object.
+- **Three-Tier State Allocation:**
+  1. Global plugin options -> `data.json`
+  2. Board structure & configuration -> Board note frontmatter
+  3. Ephemeral UI state (e.g., scroll position, zoom) -> In-memory view instance
 
 ## Additional requirements and constraints
 
@@ -103,4 +119,4 @@ This constitution governs the development, maintenance, and evolution of the **O
 - **Versioning policy:** The constitution version follows semantic versioning (MAJOR.MINOR.PATCH). MAJOR: backward-incompatible removal or redefinition of a principle. MINOR: a new principle/section added or materially expanded guidance. PATCH: clarifications, wording, or typo fixes.
 - **Compliance review:** A constitution compliance review is a mandatory checkpoint when accepting a PR and before releasing any production version.
 
-**Version**: 1.5.0 | **Ratified**: 2026-10-14 | **Last Amended**: 2026-10-17
+**Version**: 1.6.0 | **Ratified**: 2026-10-14 | **Last Amended**: 2026-10-17
