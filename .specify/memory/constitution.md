@@ -77,7 +77,7 @@ This constitution governs the development, maintenance, and evolution of the **O
   1. `src/domain/` — Pure TypeScript data transformations and matrix calculations (Zero Obsidian imports allowed).
   2. `src/obsidian/` — Adapters connecting Obsidian events (`metadataCache`, `vault`) to domain functions.
   3. `src/ui/` — Native DOM rendering and CSS class application.
-- **No Inline JS Styling:** Direct manipulation of `element.style` in JS is forbidden. All styling MUST use CSS classes defined in `styles.css` relying on Obsidian CSS variables.
+- **No Inline JS Styling:** Direct manipulation of `element.style` in JS is forbidden. All styling MUST use CSS classes defined in `styles.css` relying on Obsidian CSS variables. *Clarification (v1.6.1):* setting CSS custom properties (e.g., `--usm-col`, `--usm-row`, `--usm-grid-cols`) to encode **structural geometry** (grid item positions, spans, track counts) is permitted, provided that all **visual styling** (colors, fonts, spacing, borders, backgrounds, shadows) is defined exclusively in `styles.css` using Obsidian CSS variables. The prohibition targets direct assignment of visual style properties (e.g., `el.style.color = 'red'`) and the use of inline `style` attributes for presentation.
 - **Popout Window Compatibility:** Dynamic DOM element creation MUST use the container's document context (`containerEl.ownerDocument`) instead of the global `document` object.
 - **Three-Tier State Allocation:**
   1. Global plugin options -> `data.json`
@@ -119,4 +119,4 @@ This constitution governs the development, maintenance, and evolution of the **O
 - **Versioning policy:** The constitution version follows semantic versioning (MAJOR.MINOR.PATCH). MAJOR: backward-incompatible removal or redefinition of a principle. MINOR: a new principle/section added or materially expanded guidance. PATCH: clarifications, wording, or typo fixes.
 - **Compliance review:** A constitution compliance review is a mandatory checkpoint when accepting a PR and before releasing any production version.
 
-**Version**: 1.6.0 | **Ratified**: 2026-10-14 | **Last Amended**: 2026-10-17
+**Version**: 1.6.1 | **Ratified**: 2026-10-14 | **Last Amended**: 2026-10-17

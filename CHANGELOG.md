@@ -5,6 +5,22 @@ file. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- **Constitution v1.6.1 (PATCH)** — clarified the "No Inline JS Styling" rule
+  (Principle VII): setting CSS custom properties to encode structural
+  geometry (grid positions, spans, track counts) is permitted; the
+  prohibition targets direct assignment of visual style properties. All
+  visual styling remains exclusively in `styles.css` with Obsidian CSS
+  variables.
+- **Source layout aligned with Constitution Principle VII** — `src/`
+  restructured into the strict 3-layer directory structure: `src/domain/`
+  (pure data transformations, zero Obsidian imports), `src/obsidian/`
+  (adapters connecting Obsidian events to domain functions), and `src/ui/`
+  (native DOM rendering and CSS class application). No behavioral change.
+
 ## [0.1.0] - 2026-10-17
 
 ### Added
