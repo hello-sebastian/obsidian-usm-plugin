@@ -51,10 +51,10 @@
  * All note-derived strings are inserted as text nodes (FR-016) — never
  * via `innerHTML` — so note content can never execute as markup.
  */
-import type { GridModel, StoryEntry } from '../types';
-import { UNASSIGNED, cellKey, normalizeKey } from '../types';
-import { t } from '../i18n/en';
-import { createStoryCard } from '../story/story-card';
+import type { GridModel, StoryEntry } from '../domain/types';
+import { UNASSIGNED, cellKey, normalizeKey } from '../domain/types';
+import { t } from './en';
+import { createStoryCard } from './story-card';
 
 /**
  * One leaf column of the grid: a single Epic under a Task under an

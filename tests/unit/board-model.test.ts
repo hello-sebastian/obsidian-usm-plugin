@@ -1,7 +1,7 @@
 /**
  * Unit tests for grid model building (T030, US2).
  *
- * Covers `buildGridModel` from `src/board/board-model.ts` against
+ * Covers `buildGridModel` from `src/domain/board-model.ts` against
  * in-memory story entries and the versioned fixtures (T028):
  * - column hierarchy (Activity → Task → Epic) in order of first appearance — FR-005
  * - row order (appearance and alphabetical) — FR-006
@@ -11,18 +11,18 @@
  * - `unassigned` per-level flags — data-model.md E-06
  */
 import { describe, it, expect } from 'vitest';
-import { buildGridModel } from '../../src/board/board-model';
+import { buildGridModel } from '../../src/domain/board-model';
 import {
 	readBoardConfig,
 	parseBoardEntries,
-} from '../../src/board/board-parser';
+} from '../../src/obsidian/board-parser';
 import { loadFixtureApp } from '../helpers/fixture-app';
-import { UNASSIGNED, cellKey } from '../../src/types';
+import { UNASSIGNED, cellKey } from '../../src/domain/types';
 import type {
 	BoardConfig,
 	StoryAttributes,
 	StoryEntry,
-} from '../../src/types';
+} from '../../src/domain/types';
 
 const APPEARANCE: BoardConfig = {
 	isBoard: true,

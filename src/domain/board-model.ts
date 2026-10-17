@@ -26,8 +26,8 @@ import type {
 	GridModel,
 	StoryEntry,
 	TaskGroup,
-} from '../types';
-import { UNASSIGNED, cellKey, normalizeKey } from '../types';
+} from './types';
+import { UNASSIGNED, cellKey, normalizeKey } from './types';
 
 /**
  * One hierarchy level as discovered while scanning the entries: the

@@ -34,8 +34,8 @@ import type { App, TFile } from 'obsidian';
 // the minimal runtime surface (`TextFileView`, `FileView`, `setIcon`) the
 // real `BoardView` / `BoardRenderer` code needs under jsdom.
 
-import { BoardView } from '../../src/board/board-view';
-import { BoardRenderer } from '../../src/board/board-renderer';
+import { BoardView } from '../../src/obsidian/board-view';
+import { BoardRenderer } from '../../src/ui/board-renderer';
 import { patchHTMLElement } from '../helpers/dom-patch';
 
 // --- Mock vault app (dynamic metadata cache) --------------------------------

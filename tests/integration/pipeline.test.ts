@@ -21,15 +21,15 @@ import { describe, it, expect } from 'vitest';
 import {
 	readBoardConfig,
 	parseBoardEntries,
-} from '../../src/board/board-parser';
-import { buildGridModel } from '../../src/board/board-model';
+} from '../../src/obsidian/board-parser';
+import { buildGridModel } from '../../src/domain/board-model';
 import {
 	loadFixtureApp,
 	buildAppFromContents,
 	type FixtureApp,
 } from '../helpers/fixture-app';
-import { UNASSIGNED, cellKey } from '../../src/types';
-import type { BoardConfig, GridModel, StoryEntry } from '../../src/types';
+import { UNASSIGNED, cellKey } from '../../src/domain/types';
+import type { BoardConfig, GridModel, StoryEntry } from '../../src/domain/types';
 
 /**
  * Run the complete data pipeline for a board file:

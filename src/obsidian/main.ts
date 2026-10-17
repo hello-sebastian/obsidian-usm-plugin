@@ -5,14 +5,14 @@ import {
 	BoardView,
 	registerBoardFileRouting,
 	registerBoardViewCommands,
-} from './board/board-view';
+} from './board-view';
 
 /**
  * User Story Map plugin entry point (T012).
  *
  * Kept minimal: plugin lifecycle + registration only. All feature logic
- * lives in dedicated modules (`board/`, `story/`, `i18n/`, `debug/`,
- * `utils/`) per the project conventions.
+ * lives in dedicated modules (`domain/`, `obsidian/`, `ui/`) per the
+ * project conventions (Constitution Principle VII).
  */
 export default class UsmPlugin extends Plugin {
 	settings!: UsmSettings;

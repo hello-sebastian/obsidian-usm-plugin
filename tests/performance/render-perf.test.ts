@@ -22,10 +22,10 @@ import { describe, it, expect, beforeAll } from 'vitest';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { buildGridModel } from '../../src/board/board-model';
-import { BoardRenderer } from '../../src/board/board-renderer';
+import { buildGridModel } from '../../src/domain/board-model';
+import { BoardRenderer } from '../../src/ui/board-renderer';
 import { patchHTMLElement } from '../helpers/dom-patch';
-import type { BoardConfig, GridModel, StoryEntry } from '../../src/types';
+import type { BoardConfig, GridModel, StoryEntry } from '../../src/domain/types';
 
 // Defined board size (T034): the task requires ≥ 10 columns × ≥ 5 rows ×
 // ≥ 50 stories. We scale well beyond that minimum so the measured timings

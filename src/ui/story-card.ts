@@ -16,7 +16,7 @@
  * inert placeholder cards (T018, research R-11) — no click or keyboard
  * activation, since there is no note to open. The card shows the link text
  * as its title plus a "Missing note" hint in the footer (label from
- * `src/i18n/en.ts`). The dimmed styling (reduced opacity, dashed border,
+ * `src/ui/en.ts`). The dimmed styling (reduced opacity, dashed border,
  * no hover/focus affordances) is defined in `styles.css`.
  *
  * All note-derived strings (title, badge, hint) are inserted as text nodes
@@ -25,8 +25,8 @@
  *
  * Integration into the grid renderer is provided by T016.
  */
-import type { StoryEntry } from '../types';
-import { t } from '../i18n/en';
+import type { StoryEntry } from '../domain/types';
+import { t } from './en';
 
 /**
  * Create a story card in `parent` for `entry`.

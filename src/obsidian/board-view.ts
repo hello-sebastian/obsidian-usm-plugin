@@ -34,13 +34,13 @@ import {
 	WorkspaceLeaf,
 	setIcon,
 } from 'obsidian';
-import { t } from '../i18n/en';
+import { t } from '../ui/en';
 import { readBoardConfig, parseBoardEntries } from './board-parser';
-import { buildGridModel } from './board-model';
-import { BoardRenderer } from './board-renderer';
-import { DebugPanel } from '../debug/debug-panel';
-import { debounce, type DebouncedFn } from '../utils/debounce';
-import type { GridModel } from '../types';
+import { buildGridModel } from '../domain/board-model';
+import { BoardRenderer } from '../ui/board-renderer';
+import { DebugPanel } from '../ui/debug-panel';
+import { debounce, type DebouncedFn } from '../domain/debounce';
+import type { GridModel } from '../domain/types';
 
 /** Custom view type for the board view (stable once released). */
 export const BOARD_VIEW_TYPE = 'usm-board-view';

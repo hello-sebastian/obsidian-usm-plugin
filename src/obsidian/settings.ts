@@ -12,8 +12,8 @@
  */
 import { Setting, SettingTab } from 'obsidian';
 import type UsmPlugin from './main';
-import { t } from './i18n/en';
-import { refreshBoardDebugPanels } from './board/board-view';
+import { t } from '../ui/en';
+import { refreshBoardDebugPanels } from './board-view';
 
 export interface UsmSettings {
 	/**

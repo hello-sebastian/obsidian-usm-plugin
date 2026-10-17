@@ -11,7 +11,7 @@
  * file name without extension (research R-12).
  */
 import { App, TFile } from 'obsidian';
-import type { AttributeValue, StoryAttributes } from '../types';
+import type { AttributeValue, StoryAttributes } from '../domain/types';
 
 /** Canonical attribute names a story note can carry. */
 export type CanonicalField =

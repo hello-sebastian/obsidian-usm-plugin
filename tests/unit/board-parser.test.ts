@@ -2,7 +2,7 @@
  * Unit tests for board file parsing (T029, US1).
  *
  * Covers `readBoardConfig` and `parseBoardEntries` from
- * `src/board/board-parser.ts` against the versioned fixtures (T028) and
+ * `src/obsidian/board-parser.ts` against the versioned fixtures (T028) and
  * in-memory notes:
  * - flag detection (`usm-board: true`, case-insensitive) — FR-001
  * - config attribute reading (`usm-release-order`) — FR-006
@@ -13,7 +13,7 @@
  * - board config stored in the file header (self-describing) — FR-021
  */
 import { describe, it, expect } from 'vitest';
-import { readBoardConfig, parseBoardEntries } from '../../src/board/board-parser';
+import { readBoardConfig, parseBoardEntries } from '../../src/obsidian/board-parser';
 import { loadFixtureApp, buildAppFromContents } from '../helpers/fixture-app';
 
 describe('readBoardConfig (T029)', () => {

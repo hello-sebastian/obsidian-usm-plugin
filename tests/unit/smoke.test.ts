@@ -7,9 +7,9 @@
  * feature tests live in T029–T032.
  */
 import { describe, it, expect } from 'vitest';
-import { buildGridModel } from '../../src/board/board-model';
-import { UNASSIGNED, cellKey, normalizeKey } from '../../src/types';
-import type { BoardConfig, StoryEntry } from '../../src/types';
+import { buildGridModel } from '../../src/domain/board-model';
+import { UNASSIGNED, cellKey, normalizeKey } from '../../src/domain/types';
+import type { BoardConfig, StoryEntry } from '../../src/domain/types';
 
 const CONFIG: BoardConfig = { isBoard: true, releaseRowOrder: 'appearance' };
 

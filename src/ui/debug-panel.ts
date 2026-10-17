@@ -17,7 +17,7 @@
  * dependency on the Obsidian runtime, so it is unit-testable under jsdom.
  * All labels come from the i18n dictionary (research R-09).
  */
-import { t } from '../i18n/en';
+import { t } from './en';
 
 /** How often (ms) the fps + story count are recomputed and displayed. */
 const METRIC_INTERVAL_MS = 500;

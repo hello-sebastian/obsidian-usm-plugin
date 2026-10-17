@@ -8,12 +8,12 @@
  * marked `isBroken: true` (FR-018 edge case).
  */
 import { App, TFile, type LinkCache } from 'obsidian';
-import type { BoardConfig, StoryEntry, StoryAttributes } from '../types';
+import type { BoardConfig, StoryEntry, StoryAttributes } from '../domain/types';
 import {
 	readStoryAttributes,
 	resolveStoryTitle,
 	parseWikilink,
-} from '../story/story-attributes';
+} from './story-attributes';
 
 /** Empty attribute set — used for broken links (no note to read). */
 const EMPTY_ATTRIBUTES: StoryAttributes = {

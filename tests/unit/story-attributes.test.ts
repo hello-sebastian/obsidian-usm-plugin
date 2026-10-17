@@ -3,7 +3,7 @@
  *
  * Covers `readStoryAttributes`, `resolveStoryTitle`,
  * `normalizeAttributeValue`, and `parseWikilink` from
- * `src/story/story-attributes.ts` against the versioned fixtures (T028)
+ * `src/obsidian/story-attributes.ts` against the versioned fixtures (T028)
  * and in-memory notes:
  * - PL/EN synonym matching (activity/aktywność, task/zadanie,
  *   epic/epik, release/wydanie/row) — FR-012
@@ -18,7 +18,7 @@ import {
 	normalizeAttributeValue,
 	readStoryAttributes,
 	resolveStoryTitle,
-} from '../../src/story/story-attributes';
+} from '../../src/obsidian/story-attributes';
 import { loadFixtureApp, buildAppFromContents } from '../helpers/fixture-app';
 
 describe('readStoryAttributes — PL/EN synonyms (T031)', () => {

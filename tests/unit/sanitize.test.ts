@@ -6,7 +6,7 @@
  *    `setText` / `createEl({ text })`, which the DOM treats as inert text.
  *    Verified by building real DOM nodes under jsdom and asserting that
  *    malicious payloads never become elements.
- * 2. **Fallback** — `escapeHtml` / `escapeAttr` from `src/utils/sanitize.ts`:
+ * 2. **Fallback** — `escapeHtml` / `escapeAttr` from `src/domain/sanitize.ts`:
  *    the five HTML-significant characters are escaped so that, in the rare
  *    case markup must be constructed from note data, the result renders as
  *    inert text and never executes.
@@ -19,7 +19,7 @@ import { describe, it, expect, beforeAll } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { escapeHtml, escapeAttr } from '../../src/utils/sanitize';
+import { escapeHtml, escapeAttr } from '../../src/domain/sanitize';
 import { patchHTMLElement } from '../helpers/dom-patch';
 
 const SRC_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'src');
@@ -102,9 +102,9 @@ describe('text-node insertion path (primary defense)', () => {
 
 describe('static audit: no innerHTML with note data (FR-016)', () => {
 	const files = [
-		'board/board-renderer.ts',
-		'story/story-card.ts',
-		'board/board-view.ts',
+		'ui/board-renderer.ts',
+		'ui/story-card.ts',
+		'obsidian/board-view.ts',
 	];
 
 	it.each(files)('src/%s never assigns innerHTML/outerHTML or uses insertAdjacentHTML', (file) => {
