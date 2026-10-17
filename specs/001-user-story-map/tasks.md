@@ -62,7 +62,7 @@ description: "Task list for User Story Map Board View"
 
 ### Tests for User Story 1 ⚠️
 
-> **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
+> **NOTE:** TDD baseline (grandfathered — see the *TDD compliance* note in *Notes*). For all new work, write the failing test FIRST, then implement.
 
 - [X] T029 [P] [US1] Write unit tests for board file parsing in `tests/unit/board-parser.test.ts` — flag detection (`usm-board: true`, case-insensitive), config attribute reading (`usm-release-order`), wikilink extraction (ordered list, ignoring non-link lines), duplicate links preserved as separate entries, broken links marked `isBroken: true`, unknown config values fall back to defaults (FR-001, FR-003, FR-006, FR-018, FR-021; uses fixtures from T028)
 
@@ -84,7 +84,7 @@ description: "Task list for User Story Map Board View"
 
 ### Tests for User Story 2 ⚠️
 
-> **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
+> **NOTE:** TDD baseline (grandfathered — see the *TDD compliance* note in *Notes*). For all new work, write the failing test FIRST, then implement.
 
 - [X] T030 [P] [US2] Write unit tests for grid model building in `tests/unit/board-model.test.ts` — column hierarchy (Activity → Task → Epic) in order of first appearance, row order (appearance and alphabetical), `UNASSIGNED` key placement for missing attributes, case-insensitive value grouping (`Login` and `login` → same column), `cells` map key format and population, `unassigned` per-level flags (FR-005, FR-006, FR-011; SC-002; uses fixtures from T028)
 
@@ -105,7 +105,7 @@ description: "Task list for User Story Map Board View"
 
 ### Tests for User Story 3 ⚠️
 
-> **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
+> **NOTE:** TDD baseline (grandfathered — see the *TDD compliance* note in *Notes*). For all new work, write the failing test FIRST, then implement.
 
 - [X] T031 [P] [US3] Write unit tests for story attribute reading in `tests/unit/story-attributes.test.ts` — PL/EN synonym matching (activity/aktywność, task/zadanie, epic/epik, release/wydanie/row), case-insensitive field name matching, plain-text vs. wikilink value distinction (`{ text, linkPath? }`), title cascade (`Story` → `title` → first alias → file name), missing frontmatter → all attributes `null` (FR-004, FR-009, FR-012; uses fixtures from T028)
 
@@ -140,7 +140,7 @@ description: "Task list for User Story Map Board View"
 
 ### Tests for User Story 5 ⚠️
 
-> **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
+> **NOTE:** TDD baseline (grandfathered — see the *TDD compliance* note in *Notes*). For all new work, write the failing test FIRST, then implement.
 
 - [X] T032 [P] [US5] Write integration tests for the full data pipeline in `tests/integration/pipeline.test.ts` — load fixture board + story notes (from `tests/fixtures/`), run the complete pipeline (parse → attributes → model), verify: stories with missing attributes land in `UNASSIGNED` cells at the correct level, broken links produce `isBroken` entries with correct grid position, stories with no frontmatter are fully unassigned, the resulting `GridModel` matches the expected structure (cell keys, order, unassigned flags) (FR-011, SC-002, SC-003; depends on T028)
 
@@ -271,9 +271,9 @@ With multiple developers:
 
 - [P] tasks = different files, no dependencies on incomplete tasks
 - [Story] label maps task to specific user story for traceability
-- Task IDs are not strictly sequential with execution order (test tasks T027–T034 were appended after the original numbering); **phase grouping is authoritative** for execution order
+- Task IDs are not strictly sequential with execution order (test tasks T027–T034 were appended after the original numbering); **phase grouping is authoritative** for task *grouping and dependency order*. This is distinct from the **TDD discipline** (Constitution Principle III), which governs the *within-task* order for all new work (failing test first, then implementation) — see the *TDD compliance* note above. The two rules operate at different levels and are not in conflict.
 - **Tests are a first-class part of the MVP** (FR-022, FR-023, FR-024, SC-009, SC-010): automated unit + integration tests (Vitest) for core logic, versioned fixtures for reproducibility, automated performance tests for render thresholds; manual acceptance via `quickstart.md` for user-facing behavior
-- Test tasks are marked ⚠️ and should be written FIRST (TDD): ensure they FAIL before the corresponding implementation is complete
+- **TDD compliance (Constitution Principle III):** All domain logic MUST be developed test-first (Red-Green-Refactor) — a previously written, failing unit test (Red) before its implementation. **Documented grandfathering:** the foundational data pipeline (T005 in Phase 1; T007–T009 in Phase 2) was implemented on 2026-10-16, *before* the TDD rule was ratified in constitution v1.5.0 (2026-10-17); its unit tests (T029–T031) and the sanitization test (T033) were added to establish the regression baseline. This is a one-time, documented exception. From this point forward, every new or changed piece of domain logic MUST follow TDD. **Reconciliation:** “phase grouping is authoritative” governs task *grouping and dependency order*; TDD governs the *within-task discipline* for all new work — the two are not in conflict.
 - All code in TypeScript strict mode, no `any`; comments in English (Constitution Principle III)
 - All user-facing strings from `src/ui/en.ts` — never hardcoded
 - Commit after each task or logical group
@@ -296,3 +296,4 @@ With multiple developers:
 - [X] T037 Add the inline-styling regression guard `tests/unit/inline-styling-guard.test.ts` — statically scans all `src/**/*.ts` files and fails on any `.style.<prop>` access, `setAttribute('style', …)`, or `setCssProps` call setting a non-`--usm-*` key (Constitution Principle VII)
 - [X] T038 Restructure `src/` into the strict 3-layer layout `src/domain/` (pure functions, zero Obsidian imports) / `src/obsidian/` (API adapters) / `src/ui/` (DOM rendering) via `git mv` (history preserved); rewire all relative imports in `src/` and `tests/`; update the esbuild entry point to `src/obsidian/main.ts`; verify build + full test suite + lint
 - [X] T039 Update feature documentation for the restructure: `plan.md` (3-layer Project Structure, Principle VII row in the Constitution Check table, post-amendment re-check note), `tasks.md` (path references + this phase), `research.md` (stale path references)
+- [X] T040 Add the no-network regression guard `tests/unit/no-network-guard.test.ts` — statically scans all `src/**/*.ts` files and fails when any outbound network API is referenced (`fetch(`, `XMLHttpRequest`, `WebSocket`, `sendBeacon`, `EventSource`, `requestUrl`); enforces SC-007 (100% local operation, no data sent externally)
