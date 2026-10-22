@@ -9,6 +9,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- **Constitution v1.6.2 (PATCH)** — recorded the one-time TDD grandfathering
+  for the foundational data pipeline (implemented 2026-10-16, before the TDD
+  rule was ratified in v1.5.0); its regression tests establish the baseline.
+  All subsequent domain logic MUST follow TDD.
 - **Constitution v1.6.1 (PATCH)** — clarified the "No Inline JS Styling" rule
   (Principle VII): setting CSS custom properties to encode structural
   geometry (grid positions, spans, track counts) is permitted; the

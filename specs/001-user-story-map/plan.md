@@ -16,7 +16,7 @@ The plugin renders a board note (flagged with `usm-board: true`) as a 2D visual 
 
 **Storage**: N/A — all data lives in Markdown files within the vault; read exclusively via `app.metadataCache` (no disk I/O, no plugin-owned storage)
 
-**Testing**: Automated unit + integration tests (Vitest) for the core logic (parser, attributes, grid model, sanitization); versioned test fixtures for reproducible runs; automated performance tests measuring render smoothness on a defined board size; manual acceptance testing in Obsidian (Desktop + Mobile) against a test vault for user-facing behavior (view toggle, 2D navigation, live updates, mobile). Debug/dev mode provides the metrics source for performance tests (FR-022, FR-023, FR-024, SC-009, SC-010).
+**Testing**: Automated unit + integration tests (Vitest) for the core logic (parser, attributes, grid model, sanitization); versioned test fixtures for reproducible runs; automated performance tests measuring render smoothness on a defined board size; manual acceptance testing in Obsidian (Desktop + Mobile) against a test vault for user-facing behavior (view toggle, 2D navigation, live updates, mobile). Automated performance tests measure model build time and DOM render time (jsdom) on a defined board size; the debug/dev mode provides fps metrics for manual verification on real devices (quickstart Q7) (FR-022, FR-023, FR-024, SC-009, SC-010).
 
 **Target Platform**: Obsidian Desktop (macOS, Windows, Linux) + Mobile (iOS, Android). No Node.js/Electron APIs.
 

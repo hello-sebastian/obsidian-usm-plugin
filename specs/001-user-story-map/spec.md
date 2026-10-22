@@ -138,7 +138,7 @@ Tests are a first-class part of this feature: they are the baseline that defines
    - Content safety: note-derived strings containing markup or script fragments are neutralized and never executed (FR-016).
 2. **Automated integration tests** — the data pipeline end to end (board file + story files → grid model), verifying that the model matches the expected structure for a given set of notes (SC-002, SC-003).
 3. **Manual acceptance tests** — the user-facing behavior that requires the real application environment, executed against the scenarios in `quickstart.md`: opening the map, switching views, 2D navigation, live updates, mobile behavior (FR-002, FR-013, FR-014, FR-019; SC-004, SC-005, SC-006).
-4. **Performance tests** — automated measurement of rendering smoothness (e.g., frame rate, render time, number of rendered stories) on a board of a defined size, using the debug/dev mode metrics as the measurement source; the results establish the performance thresholds referenced in SC-001 (FR-020, FR-024).
+4. **Performance tests** — automated measurement of rendering smoothness (model build time, DOM render time in jsdom, number of rendered stories) on a board of a defined size; the debug/dev mode fps metrics are verified manually on a real device (quickstart Q7); the results establish the performance thresholds referenced in SC-001 (FR-020, FR-024).
 
 **Test data**: a dedicated set of fixture notes (a board note and story notes) covering all attribute combinations, missing attributes, duplicates, broken links, and mixed Polish/English field names. The fixtures are versioned with the project so that every test run is reproducible.
 
@@ -200,7 +200,7 @@ Tests are a first-class part of this feature: they are the baseline that defines
 
 ### Measurable Outcomes
 
-- **SC-001**: The user can open a flagged board note and see the visual map; rendering smoothness is measurable using the debug/dev mode metrics (e.g., fps, number of displayed stories), and target performance thresholds will be established based on those metrics and tests.
+- **SC-001**: The user can open a flagged board note and see the visual map; rendering smoothness is measurable (automated: model build time, DOM render time, story count on a defined board size; manual: fps via the debug/dev mode on a real device). The MVP establishes a recorded performance baseline with a regression guard (fail on >20% regression); absolute performance targets are set post-MVP from that baseline and real-device measurements.
 - **SC-002**: 100% of stories with complete attributes appear in the correct grid cell (the correct Activity/Task/Epic column and Release row) on the first render.
 - **SC-003**: 100% of stories with one or more missing attributes are placed in the appropriate "Unassigned" section without an error or hang.
 - **SC-004**: The user can switch between the map view and the Markdown view and back without any change to the note's content (verified by content comparison).
