@@ -1,28 +1,14 @@
-# Project-local SpecKit extensions.
-#
-# This file is NOT managed by `speckit update`: the update only re-syncs the
-# files listed in .specify/integrations/*.manifest.json. Project-local hooks
-# registered here survive upgrades.
-#
-# Hook lifecycle:
-#   before_implement — runs before /speckit-implement starts executing tasks
-#   after_implement  — runs after /speckit-implement finishes
-#
-# Hook fields:
-#   command    — skill/command id (dots become hyphens when invoked:
-#                usm.task-protocol -> /usm-task-protocol)
-#   description— shown to the user
-#   optional   — false = mandatory (MUST run before implementation starts)
-#   enabled    — set to false to disable without deleting
-#   condition  — optional expression evaluated by the HookExecutor
-#                (leave empty to always run)
-
 hooks:
   before_implement:
-    - command: usm.task-protocol
-      description: >
-        Inject the mandatory per-task checkoff protocol (Constitution:
-        Logical Atomicity Protocol — Immediate Checkpointing & Progress
-        Tracking). Each task MUST be checked off in tasks.md immediately
-        after it is completed and verified; batch checkoff is forbidden.
-      optional: false
+  - command: usm.task-protocol
+    description: 'Inject the mandatory per-task checkoff protocol (Constitution: Logical
+      Atomicity Protocol — Immediate Checkpointing & Progress Tracking). Each task
+      MUST be checked off in tasks.md immediately after it is completed and verified;
+      batch checkoff is forbidden.
+
+      '
+    optional: false
+installed:
+- bug
+settings:
+  auto_execute_hooks: true
