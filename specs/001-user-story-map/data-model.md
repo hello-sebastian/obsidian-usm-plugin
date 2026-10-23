@@ -1,8 +1,8 @@
 # Data Model: User Story Map Board View
 
-**Feature**: `001-user-story-map` | **Date**: 2026-10-15
+**Feature**: `001-user-story-map` | **Date**: 2026-10-15 (updated 2026-10-23)
 
-The plugin owns **no persistent data**. All entities below are in-memory representations derived from Markdown files via `app.metadataCache`. The only persisted state is the plugin setting `debugMode` (via `saveData`).
+The plugin owns **no persistent data of its own**. All entities below are in-memory representations derived from Markdown files via `app.metadataCache`. The only persisted state is the plugin setting `debugMode` (via `saveData`). The single sanctioned board-file write is the `usm-view` frontmatter attribute (last-selected view, FR-026) — board-level state lives in the board file, not in plugin storage (FR-028).
 
 ## E-01: Board Note (source)
 
@@ -24,6 +24,7 @@ Parsed from the board file frontmatter.
 |-------|------|------------------|---------|-------|
 | `isBoard` | `boolean` | `usm-board` | `false` | Gate for map rendering. |
 | `releaseRowOrder` | `'appearance' \| 'alphabetical'` | board config attribute (see `contracts/board-file-format.md`) | `'appearance'` | FR-006: row ordering strategy. |
+| `usmView` | `'map' \| 'edit' \| 'preview'` | `usm-view` | `'map'` | FR-026: last-selected view type. Read when the board note is opened (restores the view); written back via `vault.process()` when the user switches views. Missing or unrecognized values fall back to `'map'`. |
 
 Validation: unknown/invalid values fall back to defaults; no errors are raised (spec edge case: unknown config attributes are ignored).
 
@@ -90,7 +91,7 @@ Built by `board-model.ts` from `BoardConfig` + `StoryEntry[]`.
 
 ### State transitions
 
-The model has no lifecycle of its own — it is rebuilt from scratch on every (debounced) update event. The only stateful component is the view: `mode: 'markdown' | 'map'` (toggled by the pane header icon / command), which does not affect the model.
+The model has no lifecycle of its own — it is rebuilt from scratch on every (debounced) update event. View selection is not part of the model: the plugin's `usm-board-view` renders the map only (FR-025), while "Edit MD" / "View MD" are Obsidian's native `MarkdownView` (source/preview modes). The last-selected view is persisted as the `usm-view` frontmatter attribute (FR-026): read on open (default `map`), written on switch (last switch wins across panes; other open panes are unaffected until reopened).
 
 ## Validation rules (summary)
 

@@ -1,15 +1,16 @@
 # Research: User Story Map Board View
 
-**Feature**: `001-user-story-map` | **Date**: 2026-10-15
+**Feature**: `001-user-story-map` | **Date**: 2026-10-15 (updated 2026-10-23)
 
-All NEEDS CLARIFICATION items from the Technical Context were resolved during the two `/speckit-clarify` sessions (7 questions total). This document records the remaining technical decisions, their rationale, and alternatives considered.
+All NEEDS CLARIFICATION items from the Technical Context were resolved during the `/speckit-clarify` sessions (10 questions total across 2026-10-15, 2026-10-22, and 2026-10-23). This document records the remaining technical decisions, their rationale, and alternatives considered. The 2026-10-22/23 clarifications (FR-025–FR-028) supersede the original dual-mode view design: the plugin now registers a single map-only view in Obsidian's native view picker and does not render the board note's text itself.
 
-## R-01: View architecture for dual-mode (raw Markdown ↔ visual map)
+## R-01: View architecture (native view picker, map-only custom view)
 
-- **Decision**: Subclass `TextFileView` and register it with a custom view type (e.g., `usm-board-view`). The view renders the raw Markdown source in its leaf; when the active file is a board note (`usm-board: true`), the view swaps its content container to the visual map. A pane header icon and a command palette command toggle between the two modes for the same leaf/file.
-- **Rationale**: `TextFileView` is the Obsidian-native base for file-backed views. It gives us the file lifecycle (open/close/switch), the pane header (for the toggle icon), and the standard Markdown rendering for the "raw" mode for free. Toggling within the same leaf guarantees SC-004 (no content change) because the underlying file is never touched — only the rendered representation changes.
+- **Decision**: Register a single custom file view (a `FileView` subclass, view type `usm-board-view`) via `plugin.registerView`. This view renders **only** the visual map. It appears in Obsidian's native "change view" picker (the pane header button) alongside the standard Markdown editor ("Edit MD") and standard Markdown preview ("View MD") — the three options required by FR-027. The plugin does **not** render the board note's text itself (FR-025): text display and editing are always Obsidian's standard Markdown view. The plugin provides no pane header icon and no command palette command for switching (FR-002).
+- **Rationale**: Constitution Principle I mandates reusing Obsidian's built-in view system rather than reimplementing it. Registering a `FileView` makes the map a first-class, native view in the picker (FR-027: all three options visible at a glance). Because the map view and the Markdown views are separate leaves, switching between them is exactly what the native picker does — no custom toggle UI is needed, and the note content is never touched by the plugin (SC-004).
 - **Alternatives considered**:
-  - *Separate `ItemView` for the map + `MarkdownView` for raw mode*: rejected — switching between two different leaves is less seamless, complicates "same note, two modes", and loses the file context in the map view.
+  - *Dual-mode `TextFileView` (original design)*: rejected — it rendered the board source as inert text inside the plugin's own view (a plugin-implemented text display, an FR-025 violation) and required a custom pane header icon + command palette command to toggle (an FR-002 violation). Superseded by the 2026-10-22/23 clarifications.
+  - *`ItemView` (non-file) for the map*: rejected — a non-file view loses the file context (no `file`, no file lifecycle), making it harder to bind the map to a specific board note and to coexist with the Markdown views of the same note.
   - *Overlay/iframe approach*: rejected — non-native, poor mobile behavior, harder accessibility.
 
 ## R-02: Data access strategy
@@ -59,7 +60,7 @@ All NEEDS CLARIFICATION items from the Technical Context were resolved during th
 
 ## R-08: Board file configuration attributes
 
-- **Decision**: Board-level configuration is read from the board file frontmatter as plain attributes alongside the `usm-board: true` flag. MVP attribute: row ordering for Release (default: order of first appearance; optional: alphabetical sort). Unknown attributes are ignored (edge case in spec). Exact attribute key names are defined in `contracts/board-file-format.md`.
+- **Decision**: Board-level configuration is read from the board file frontmatter as plain attributes alongside the `usm-board: true` flag. MVP attributes: row ordering for Release (default: order of first appearance; optional: alphabetical sort) and `usm-view` (last-selected view type: `map` / `edit` / `preview`, default `map` — FR-026). Unknown attributes are ignored (edge case in spec). Exact attribute key names are defined in `contracts/board-file-format.md`.
 - **Rationale**: Constitution Principle VI mandates self-describing, portable board config in the board file frontmatter.
 - **Alternatives considered**:
   - *Plugin settings storage (`saveData`)*: rejected — not portable across sync/copy/reinstall, not AI-readable, violates Principle VI.
@@ -97,8 +98,32 @@ All NEEDS CLARIFICATION items from the Technical Context were resolved during th
 ## R-13: Automated test framework and testability design
 
 - **Decision**: Vitest as the test runner (unit + integration + performance tests). The core logic modules (`board-parser.ts`, `story-attributes.ts`, `board-model.ts`, `sanitize.ts`) are implemented as **pure functions** that take plain data (file content strings, cache-shaped objects) and return plain results — no direct `app`/`metadataCache` references inside the tested functions. A thin adapter layer in the view wires the real `metadataCache` into these functions. Tests live in `tests/` (unit, integration, performance) with versioned fixture notes in `tests/fixtures/` (FR-022, FR-023). Performance tests (FR-024) measure render time and story count on a board of a defined size (e.g., 10 columns × 5 rows × N stories) using the same metrics the debug panel exposes (R-07), establishing the thresholds referenced in SC-001. The suite must run in under 2 minutes on a clean environment (SC-010).
-- **Rationale**: The spec (Testing Strategy, FR-022–FR-024, SC-009–SC-010) makes tests a first-class part of the MVP — the baseline that defines whether the goals are achieved. Vitest is chosen because it is a zero-config, fast, TypeScript-native runner that works in Node.js without a browser, which fits the pure-function design of the core logic and the constitution's dependency-minimization rule (one dev-only dependency, no runtime impact on `main.js`). Pure-function design keeps the tested logic free of Obsidian runtime dependencies, so the suite runs in CI and locally without an Obsidian instance; user-facing behavior (view toggle, 2D navigation, live updates, mobile) remains covered by the manual quickstart scenarios, which require the real application environment.
+- **Rationale**: The spec (Testing Strategy, FR-022–FR-024, SC-009–SC-010) makes tests a first-class part of the MVP — the baseline that defines whether the goals are achieved. Vitest is chosen because it is a zero-config, fast, TypeScript-native runner that works in Node.js without a browser, which fits the pure-function design of the core logic and the constitution's dependency-minimization rule (one dev-only dependency, no runtime impact on `main.js`). Pure-function design keeps the tested logic free of Obsidian runtime dependencies, so the suite runs in CI and locally without an Obsidian instance; user-facing behavior (three-view picker, `usm-view` persistence, 2D navigation, live updates, mobile) remains covered by the manual quickstart scenarios, which require the real application environment.
 - **Alternatives considered**:
   - *Jest*: rejected — functionally equivalent but heavier configuration for a TypeScript project; Vitest is the lighter, faster choice with native ESM/TS support.
   - *Playwright/obsidian-test end-to-end in a real Obsidian instance*: rejected for MVP — high setup cost, flaky, and the constitution's dependency-minimization rule favors keeping the automated suite small; manual quickstart scenarios (Q1–Q10) already cover the real-environment behavior, and an automated E2E harness can be added in a later iteration if needed.
   - *No test framework (manual only)*: rejected — the spec explicitly requires automated tests as the baseline for the success criteria (SC-009, SC-010).
+
+## R-14: View picker presentation (FR-027)
+
+- **Decision**: The plugin registers exactly one custom view (type `usm-board-view`, label "USM board") via `plugin.registerView`. Obsidian's native "change view" picker then presents three options for a board note: "USM board" (the custom view), "Edit MD" (native `MarkdownView` in source mode), and "View MD" (native `MarkdownView` in preview mode). The plugin does not build, extend, or reorder the picker — it only contributes its single entry. "Visible at a glance" (FR-027) is satisfied because all three options appear as plain list items in the native picker with no additional navigation.
+- **Rationale**: Constitution Principle I mandates reusing Obsidian's built-in solutions. The native picker is the only sanctioned mechanism for view switching (FR-002 forbids plugin-provided toggle icons/commands). Registering a single `FileView` subclass is the minimal API surface that yields exactly three picker entries for a Markdown file.
+- **Alternatives considered**:
+  - *Plugin-built custom picker UI*: rejected — duplicates native functionality, violates Principle I, and FR-002 forbids plugin-provided switching affordances.
+  - *Registering two custom views (one for edit, one for preview)*: rejected — would produce four or more picker entries and duplicate Obsidian's native Markdown rendering, violating FR-025.
+
+## R-15: `usm-view` persistence (FR-026)
+
+- **Decision**: The plugin reads `usm-view` from the board file frontmatter when a board note is opened (default `map` when missing or unrecognized). When the user switches views via the native picker, the plugin writes the new value (`map` / `edit` / `preview`) back to the frontmatter using `vault.process()` (atomic read-modify-write, safe against concurrent edits). The write is the only frontmatter mutation the plugin performs (contract: board-file-format.md). Multi-pane: the last switch wins; other open panes are not retroactively switched.
+- **Rationale**: FR-026 requires the last-selected view to be restored on reopen, and FR-028 / Principle VI require board-level state to live in the board file (portable, AI-readable, survives plugin reinstall). `vault.process()` is the Obsidian-sanctioned atomic file mutation API.
+- **Alternatives considered**:
+  - *Plugin settings storage (`saveData` / `data.json`)*: rejected — not portable, not AI-readable, violates Principle VI and FR-028 (only plugin-internal settings belong in `data.json`).
+  - *In-memory only (no persistence)*: rejected — violates FR-026 (last-selected view must be restored on reopen).
+
+## R-16: View-switch detection
+
+- **Decision**: The plugin detects view switches by listening to `workspace.on('file-open')` and inspecting the active leaf's view: if the view is the plugin's `usm-board-view`, the selected view is `map`; if it is a `MarkdownView`, `view.getMode()` returns `'source'` (→ `edit`) or `'preview'` (→ `preview`). The plugin writes `usm-view` only when the detected value differs from the current frontmatter value (no-op writes are skipped to avoid spurious file modifications). Listeners are registered via `this.registerEvent` for clean unload.
+- **Rationale**: `file-open` fires for every leaf/file activation, covering both picker-driven switches and direct file opens. `MarkdownView.getMode()` is the only API that distinguishes "Edit MD" from "View MD" (both are the same `MarkdownView` class). Skipping no-op writes keeps the board file's modification history clean.
+- **Alternatives considered**:
+  - *`workspace.on('active-leaf-change')` only*: rejected — does not fire when the same leaf's file changes, missing picker switches within an existing leaf.
+  - *Polling the active leaf*: rejected — wasteful and non-idiomatic; event-driven detection is the Obsidian-sanctioned pattern.

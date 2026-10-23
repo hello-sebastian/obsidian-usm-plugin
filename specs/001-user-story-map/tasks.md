@@ -177,7 +177,7 @@ description: "Task list for User Story Map Board View"
 - [X] T033 [P] Write unit tests for XSS sanitization in `tests/unit/sanitize.test.ts` — verify that note-derived strings containing HTML markup (`<img src=x onerror=alert(1)>`), script tags, and event handler attributes are neutralized (rendered as inert text, never executed); test the escape function output for special characters (`<`, `>`, `&`, `"`, `'`); verify the text-node insertion path (no `innerHTML` with note data) (FR-016; quickstart Q8)
 - [X] T034 Write automated performance tests in `tests/performance/render-perf.test.ts` — build a `GridModel` from a defined board size (≥ 10 columns × ≥ 5 rows × ≥ 50 stories), measure: model build time (ms), DOM render time (ms, using jsdom — dev-only dependency, see plan.md Technical Context), and story card count; record baseline thresholds on first passing run and enforce them on subsequent runs (fail if regression exceeds 20%); the suite must complete in under 2 minutes total (FR-020, FR-024, SC-001, SC-010; depends on T027, T028)
 - [X] T024 [P] Complete the map styling in `styles.css` — use Obsidian CSS variables (`var(--text-normal)`, `var(--background-primary)`, etc.) for full light/dark theme adaptation, card styling, sticky-header offsets, and mobile-friendly sizing (Constitution Principles I, IV)
-- [ ] T025 Run the full validation suite from `specs/001-user-story-map/quickstart.md` — scenarios Q1–Q10 on Desktop and Q10 on at least one mobile device; fix any failures
+- [ ] T025 Run the full validation suite from `specs/001-user-story-map/quickstart.md` — scenarios Q1–Q10 (incl. Q1b: three-view picker, `usm-view` persistence, multi-pane, unrecognized-value fallback) on Desktop and Q10 on at least one mobile device; fix any failures (depends on Phase 12 completion)
 - [X] T026 [P] Update `README.md` (usage instructions, board/story file format examples, and real screenshots of the map view — the Constitution requires a README with screenshots, so capture actual screenshots before release; do not ship a placeholder) and create `CHANGELOG.md` with the initial release entry (Constitution: documentation quality)
 
 ---
@@ -193,6 +193,7 @@ description: "Task list for User Story Map Board View"
   - US2 (Phase 4) builds directly on US1's view + renderer
   - US3–US6 (Phases 5–8) each extend the renderer/view and can proceed in priority order
 - **Polish (Phase 9)**: Depends on all desired user stories being complete
+- **View Architecture Rework (Phase 12)**: Depends on Foundational (Phase 2) completion — reworks the view layer (T010/T012 output) and the `usm-view` parsing (T008 output); must complete before T025 (full validation, which now includes Q1b)
 
 ### User Story Dependencies
 
@@ -216,7 +217,8 @@ description: "Task list for User Story Map Board View"
 - Foundational: T007 and T008 can run in parallel (different files, both depend only on T006)
 - US1: T010 and T011 can run in parallel (different files); T012 after both
 - US3: T015 can start in parallel with US2 work (different file); T016 after T015
-- Polish: T021, T023, T024, T026 can run in parallel; T022 after T021; T025 last
+- Polish: T021, T023, T024, T026 can run in parallel; T022 after T021; T025 last (after Phase 12)
+- Phase 12: T041, T042, T044 can run in parallel (different files); T043 after T042; T045 after T043 + T044; T046 after T045; T047 after T046; T048 after T045 (parallel with T046/T047 — different file); T049 after T047
 
 ---
 
@@ -229,6 +231,31 @@ Task: "T011 Implement the base map renderer in src/ui/board-renderer.ts"
 
 # Then, after both complete:
 Task: "T012 Wire the view into the plugin lifecycle in src/obsidian/main.ts"
+```
+
+---
+
+## Parallel Example: Phase 12 (View Architecture Rework)
+
+```text
+# Launch together (different files, no dependencies):
+Task: "T041 Extend tests/unit/board-parser.test.ts with usm-view parsing tests"
+Task: "T042 Add usmView to BoardConfig in src/domain/types.ts"
+Task: "T044 Update the English label dictionary in src/ui/en.ts"
+
+# Then:
+Task: "T043 Extend src/obsidian/board-parser.ts to read usm-view (after T042)"
+
+# Then:
+Task: "T045 Rework the board view in src/obsidian/board-view.ts (after T043 + T044)"
+
+# Then (T048 in parallel with T046 — different files):
+Task: "T046 Implement usm-view persistence in src/obsidian/board-view.ts (after T045)"
+Task: "T048 Rework the plugin lifecycle in src/obsidian/main.ts (after T045)"
+
+# Then:
+Task: "T047 Implement the file-open handler in src/obsidian/board-view.ts (after T046)"
+Task: "T049 Update the read-only enforcement (after T047)"
 ```
 
 ---
@@ -279,6 +306,7 @@ With multiple developers:
 - Commit after each task or logical group
 - Stop at any checkpoint to validate story independence before proceeding
 - The automated test suite must pass (under 2 minutes) before any release (SC-010)
+- **Phase 12 supersession (FR-025–FR-028):** The 2026-10-22/23 clarifications reworked the view architecture from a dual-mode `TextFileView` (plugin text display + pane header toggle icon + command-palette commands) to a native view-picker architecture (single map-only `FileView` + `usm-view` persistence + event-driven view-switch detection). Phase 12 (T041–T049) implements this rework. The view-related portions of T003, T006, T008, T010, T012, and T020 remain marked [X] as a historical record of the completed old-architecture work; Phase 12 supersedes them for the view architecture only — the data pipeline, renderer, and other non-view work in those tasks remain valid and are not reworked.
 
 ---
 
@@ -297,3 +325,32 @@ With multiple developers:
 - [X] T038 Restructure `src/` into the strict 3-layer layout `src/domain/` (pure functions, zero Obsidian imports) / `src/obsidian/` (API adapters) / `src/ui/` (DOM rendering) via `git mv` (history preserved); rewire all relative imports in `src/` and `tests/`; update the esbuild entry point to `src/obsidian/main.ts`; verify build + full test suite + lint
 - [X] T039 Update feature documentation for the restructure: `plan.md` (3-layer Project Structure, Principle VII row in the Constitution Check table, post-amendment re-check note), `tasks.md` (path references + this phase), `research.md` (stale path references)
 - [X] T040 Add the no-network regression guard `tests/unit/no-network-guard.test.ts` — statically scans all `src/**/*.ts` files and fails when any outbound network API is referenced (`fetch(`, `XMLHttpRequest`, `WebSocket`, `sendBeacon`, `EventSource`, `requestUrl`); enforces SC-007 (100% local operation, no data sent externally)
+
+---
+
+## Phase 12: View Architecture Rework (FR-025–FR-028)
+
+**Purpose**: Rework the view architecture from the old dual-mode `TextFileView` (plugin-provided text display + pane header toggle icon + command-palette commands) to the native view-picker architecture: a single map-only `FileView` registered via `plugin.registerView`, with `usm-view` persistence in the board frontmatter and event-driven view-switch detection. This phase supersedes the view-related portions of T003, T006, T008, T010, T012, and T020, which remain marked [X] as a historical record of the completed old-architecture work (see the *Phase 12 supersession* note in *Notes*).
+
+**Goal**: A board note opens in its last-selected view (default: the visual map); Obsidian's native "change view" picker offers exactly three options ("USM board", "Edit MD", "View MD") at a glance; switching views persists the `usm-view` frontmatter attribute; reopening restores the last-selected view.
+
+**Independent Test**: Open a board note — it renders as a map (default); open the native view picker — it shows exactly three options; switch to "Edit MD" — the `usm-view` frontmatter attribute updates to `edit`; close and reopen — the note reopens in the Markdown editor (quickstart Q1, Q1b).
+
+### Tests for the Rework ⚠️
+
+> **NOTE:** TDD — write the failing test FIRST, then implement (Constitution Principle III).
+
+- [ ] T041 [P] Extend `tests/unit/board-parser.test.ts` with `usm-view` parsing tests — frontmatter `usm-view: map` / `edit` / `preview` each parsed to the corresponding `BoardConfig.usmView` value; missing `usm-view` → default `'map'`; unrecognized value (e.g., `usm-view: bogus`) → default `'map'`; the parser reads `usm-view` alongside the existing `usm-board` and `usm-release-order` attributes (FR-026; uses fixtures from T028)
+
+### Implementation for the Rework
+
+- [ ] T042 [P] Add `usmView: 'map' | 'edit' | 'preview'` to the `BoardConfig` interface in `src/domain/types.ts` (data-model.md E-02; default `'map'`; strict mode, no `any`)
+- [ ] T043 [P] Extend `src/obsidian/board-parser.ts` to read the `usm-view` frontmatter attribute — missing or unrecognized value → `'map'` (FR-026; depends on T042)
+- [ ] T044 [P] Update the English label dictionary in `src/ui/en.ts` — remove the obsolete command names ("Open as User Story Map", "Open as Markdown") and the pane header icon tooltip; add the view display name "USM board" (used by the custom view's `getDisplayName()` so the native picker shows the correct label); keep all other labels (research R-09, FR-027)
+- [ ] T045 Rework the board view in `src/obsidian/board-view.ts` — replace the `TextFileView` subclass with a `FileView` subclass (view type `usm-board-view`); render ONLY the visual map (no plugin-provided text display — FR-025); remove the pane header icon and all command-palette commands (FR-002); the view's `getDisplayName()` returns the "USM board" label from `src/ui/en.ts` (FR-027; research R-01, R-14) (depends on T043, T044)
+- [ ] T046 Implement `usm-view` persistence in `src/obsidian/board-view.ts` — a function that writes the `usm-view` value (`map` / `edit` / `preview`) to the board file frontmatter via `vault.process()` (atomic read-modify-write); skip the write when the new value equals the current frontmatter value (no-op writes avoided); the write is the only frontmatter mutation the plugin performs (FR-026, FR-028; research R-15) (depends on T045)
+- [ ] T047 Implement the `file-open` handler in `src/obsidian/board-view.ts` — register `workspace.on('file-open')` via `this.registerEvent`; on each activation of a board note: (a) read `usm-view` from the frontmatter; (b) if the value is `map` (or missing/unrecognized) and the active leaf is not already the custom view, switch the leaf to the `usm-board-view`; if the value is `edit`/`preview`, ensure the native `MarkdownView` is in the corresponding mode (source/preview); (c) detect the currently-active view (custom view → `map`; `MarkdownView.getMode()` → `'source'` = `edit`, `'preview'` = `preview`) and, when it differs from the frontmatter value, call the `usm-view` write (T046); clean up the listener on unload (FR-001, FR-026; research R-16) (depends on T046)
+- [ ] T048 [P] Rework the plugin lifecycle in `src/obsidian/main.ts` — register the custom view via `plugin.registerView('usm-board-view', (leaf) => new BoardView(leaf))`; remove all command registration (no toggle commands — FR-002); keep `main.ts` minimal (lifecycle + view registration only) (depends on T045)
+- [ ] T049 Update the read-only enforcement in `src/obsidian/board-view.ts` and `src/ui/board-renderer.ts` — the map remains read-only (no editing affordances); the only board-file mutation is the `usm-view` attribute (FR-026); verify the board note body and all other frontmatter attributes are never modified (FR-015, FR-017, FR-028; supersedes the "never written" claim in T020) (depends on T047)
+
+**Checkpoint**: The native view-picker architecture is fully functional — a board note opens in its last-selected view (default map), the picker shows exactly three options, switching views persists `usm-view`, and reopening restores the last-selected view (quickstart Q1, Q1b)

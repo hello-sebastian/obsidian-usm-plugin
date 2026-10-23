@@ -10,6 +10,7 @@ The board file is the single source of truth for *which* stories appear on the m
 ---
 usm-board: true
 usm-release-order: appearance
+usm-view: map
 ---
 
 - [[Story: Onboarding]]
@@ -25,12 +26,13 @@ usm-release-order: appearance
 |-----------|------|----------|---------|-------------|
 | `usm-board` | boolean | yes | — | Flag that marks the note as a board. Only `true` activates the map view. |
 | `usm-release-order` | string | no | `appearance` | Row ordering strategy. Accepted values: `appearance` (order of first appearance of Release values among the board's stories), `alphabetical` (case-insensitive sort of Release labels). Unknown values fall back to `appearance`. |
+| `usm-view` | string | no | `map` | Last-selected view type. Accepted values: `map` (visual map), `edit` (standard Markdown editor), `preview` (standard Markdown preview). Unknown values fall back to `map`. Written by the plugin when the user switches views (FR-026). |
 
 Rules:
 
 - Attribute names are matched case-insensitively.
 - Unknown frontmatter attributes are **ignored** — they never cause an error (spec edge case).
-- The frontmatter must not be modified by the plugin (read-only map, FR-015).
+- The plugin MUST NOT modify the body (the story link list) or any frontmatter attribute other than `usm-view`. The plugin MAY write the `usm-view` attribute to record the last-selected view type (FR-026, clarification session 2026-10-23). In later iterations, the plugin MAY also write the visual-layer effects of user actions to the board file's body (FR-028).
 
 ## Body: story link list
 
@@ -51,4 +53,4 @@ Rules:
 ## Out of scope (MVP)
 
 - Story-level attributes (Activity, Task, Epic, Release, Story, title) — these live in the story notes' frontmatter (see `story-file-format.md`).
-- Board-level column ordering overrides, per-column configuration, and any other board settings beyond `usm-release-order` — deferred to later iterations.
+- Board-level column ordering overrides, per-column configuration, and any other board settings beyond `usm-release-order` and `usm-view` — deferred to later iterations.

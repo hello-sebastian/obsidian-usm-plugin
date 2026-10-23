@@ -1,6 +1,6 @@
 # Quickstart: User Story Map Board View
 
-**Feature**: `001-user-story-map` | **Date**: 2026-10-15
+**Feature**: `001-user-story-map` | **Date**: 2026-10-15 (updated 2026-10-23)
 
 Runnable validation scenarios that prove the feature works end-to-end. Prerequisites and setup are listed first; each scenario maps to a user story / success criterion from [spec.md](spec.md). File formats are defined in [contracts/board-file-format.md](contracts/board-file-format.md) and [contracts/story-file-format.md](contracts/story-file-format.md) — this guide references them instead of duplicating them.
 
@@ -71,14 +71,25 @@ release: "2.0"
 
 ## Scenarios
 
-### Q1 — Board renders as a map (User Story 1, FR-001/FR-002, SC-004)
+### Q1 — Board renders as a map (User Story 1, FR-001, SC-004)
 
-1. Open `board.md` in Obsidian.
-2. **Expected**: the note opens in the visual map view (not raw Markdown).
-3. Click the pane header icon (or run the "Open as Markdown" command).
-4. **Expected**: the same note shows raw Markdown; the file content is unchanged (compare before/after — no bytes modified).
-5. Toggle back to the map. **Expected**: identical map, no content drift.
-6. Open a non-board note (e.g., `S1.md`). **Expected**: plain Markdown view; the plugin does not interfere.
+1. Open `board.md` in Obsidian (first open — no `usm-view` attribute yet).
+2. **Expected**: the note opens in the visual map view (not raw Markdown) — the default when `usm-view` is absent (FR-001, FR-026).
+3. Open a non-board note (e.g., `S1.md`). **Expected**: plain Markdown view; the plugin does not interfere.
+
+### Q1b — Three-view picker, switching, and `usm-view` persistence (User Story 1, FR-002/FR-026/FR-027, SC-004)
+
+1. With `board.md` open in the map view, click the pane header **"change view"** button (top-right of the pane) to open Obsidian's native view picker.
+2. **Expected**: the picker shows exactly three options — **"USM board"**, **"Edit MD"**, **"View MD"** — all visible at a glance (FR-027). No other plugin-provided entries appear.
+3. Select **"Edit MD"**. **Expected**: the note switches to Obsidian's standard Markdown editor (the same editor used for any other note); the file content is unchanged (compare before/after — no bytes modified beyond the `usm-view` attribute).
+4. Open `board.md` in a text editor (or inspect the frontmatter). **Expected**: the frontmatter now contains `usm-view: edit` (FR-026). No other frontmatter attribute was added or modified.
+5. Select **"View MD"** via the picker. **Expected**: the note switches to Obsidian's standard Markdown preview; content unchanged. Frontmatter now reads `usm-view: preview`.
+6. Select **"USM board"** via the picker. **Expected**: the note switches back to the visual map; identical map, no content drift. Frontmatter now reads `usm-view: map`.
+7. Close the note and reopen it. **Expected**: it reopens in the visual map view (the last-selected view, `usm-view: map`) (FR-026).
+8. Switch to **"Edit MD"**, close, and reopen. **Expected**: it reopens in the standard Markdown editor (last-selected view restored).
+9. **Multi-pane**: open `board.md` in two panes (e.g., split view). Switch pane A to **"Edit MD"**. **Expected**: pane A shows the editor; pane B is unaffected (still shows its current view). The frontmatter reads `usm-view: edit` (last switch wins). Switch pane B to **"View MD"**. **Expected**: pane B shows the preview; pane A is unaffected. Frontmatter now reads `usm-view: preview`. Close both panes and reopen the note. **Expected**: it reopens in the preview (the last switch won) (FR-026, spec edge case).
+10. **Unrecognized value**: manually set `usm-view: bogus` in the frontmatter, save, and reopen the note. **Expected**: it opens in the visual map view (default fallback) (FR-026, spec edge case).
+11. **No plugin toggle**: verify the pane header shows no plugin-provided toggle icon and the command palette contains no plugin command for switching views (FR-002).
 
 ### Q2 — 2D grid grouping and ordering (User Story 2, FR-005/FR-006, SC-002)
 
@@ -155,7 +166,7 @@ npm run test:perf       # render performance on a defined board size (FR-024, SC
 - Performance tests pass: render time and story count on the defined board size are within the thresholds recorded by the test run (thresholds are established by the first passing run and then enforced).
 - The full suite completes in under 2 minutes on a clean environment (SC-010).
 
-The manual scenarios Q1–Q10 below cover the user-facing behavior that requires the real Obsidian environment (view toggle, 2D navigation, live updates, mobile).
+The manual scenarios Q1–Q10 (incl. Q1b) below cover the user-facing behavior that requires the real Obsidian environment (three-view picker, `usm-view` persistence, 2D navigation, live updates, mobile).
 
 ## Pass criteria
 
