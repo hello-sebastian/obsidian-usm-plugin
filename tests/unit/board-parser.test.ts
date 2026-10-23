@@ -89,7 +89,11 @@ describe('readBoardConfig (T029)', () => {
 			'S1.md': 'story\n',
 		});
 		const config = readBoardConfig(app, file('b.md'));
-		expect(config).toEqual({ isBoard: true, releaseRowOrder: 'appearance' });
+		expect(config).toEqual({
+			isBoard: true,
+			releaseRowOrder: 'appearance',
+			usmView: 'map',
+		});
 	});
 
 	it('returns defaults for a file with no frontmatter (FR-021)', () => {
@@ -100,7 +104,56 @@ describe('readBoardConfig (T029)', () => {
 		expect(readBoardConfig(app, file('b.md'))).toEqual({
 			isBoard: false,
 			releaseRowOrder: 'appearance',
+			usmView: 'map',
 		});
+	});
+
+	it('reads usm-view: map (FR-026)', () => {
+		const { app, file } = buildAppFromContents({
+			'b.md': '---\nusm-board: true\nusm-view: map\n---\n\n- [[S1]]\n',
+			'S1.md': 'story\n',
+		});
+		expect(readBoardConfig(app, file('b.md')).usmView).toBe('map');
+	});
+
+	it('reads usm-view: edit (FR-026)', () => {
+		const { app, file } = buildAppFromContents({
+			'b.md': '---\nusm-board: true\nusm-view: edit\n---\n\n- [[S1]]\n',
+			'S1.md': 'story\n',
+		});
+		expect(readBoardConfig(app, file('b.md')).usmView).toBe('edit');
+	});
+
+	it('reads usm-view: preview (FR-026)', () => {
+		const { app, file } = buildAppFromContents({
+			'b.md': '---\nusm-board: true\nusm-view: preview\n---\n\n- [[S1]]\n',
+			'S1.md': 'story\n',
+		});
+		expect(readBoardConfig(app, file('b.md')).usmView).toBe('preview');
+	});
+
+	it('defaults usm-view to map when missing (FR-026)', () => {
+		const { app, file } = buildAppFromContents({
+			'b.md': '---\nusm-board: true\n---\n\n- [[S1]]\n',
+			'S1.md': 'story\n',
+		});
+		expect(readBoardConfig(app, file('b.md')).usmView).toBe('map');
+	});
+
+	it('falls back to map for unrecognized usm-view values (FR-026, spec edge case)', () => {
+		const { app, file } = buildAppFromContents({
+			'b.md': '---\nusm-board: true\nusm-view: bogus\n---\n\n- [[S1]]\n',
+			'S1.md': 'story\n',
+		});
+		expect(readBoardConfig(app, file('b.md')).usmView).toBe('map');
+	});
+
+	it('matches usm-view case-insensitively (FR-026)', () => {
+		const { app, file } = buildAppFromContents({
+			'b.md': '---\nusm-board: true\nUSM-View: EDIT\n---\n\n- [[S1]]\n',
+			'S1.md': 'story\n',
+		});
+		expect(readBoardConfig(app, file('b.md')).usmView).toBe('edit');
 	});
 });
 

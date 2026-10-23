@@ -41,27 +41,22 @@ interface TFileLike {
 	basename: string;
 }
 
-/** Base file view (used for `instanceof` checks in the routing helper). */
-export class FileView {
-	file: TFileLike | null = null;
-}
-
 /**
- * Minimal `TextFileView` base. Provides the constructor state and the
+ * Minimal `FileView` base. Provides the constructor state and the
  * lifecycle / registration hooks `BoardView` calls via `super`.
  */
-export class TextFileView extends FileView {
+export class FileView {
+	file: TFileLike | null = null;
 	app: AppLike;
 	leaf: unknown;
 	containerEl: HTMLElement;
 	contentEl: HTMLElement;
-	data = '';
 	icon = '';
 	navigation = true;
+	allowNoFile = false;
 	scope: unknown = null;
 
 	constructor(leaf: { app: AppLike }) {
-		super();
 		this.leaf = leaf;
 		this.app = leaf.app;
 		this.containerEl = document.createElement('div');
@@ -88,11 +83,35 @@ export class TextFileView extends FileView {
 		return el;
 	}
 
+	async onload(): Promise<void> {}
 	async onOpen(): Promise<void> {}
 	async onClose(): Promise<void> {}
 	async onLoadFile(_file: TFileLike): Promise<void> {}
 	async onUnloadFile(_file: TFileLike): Promise<void> {}
 	async onRename(_file: TFileLike): Promise<void> {}
+
+	getViewType(): string {
+		return 'file';
+	}
+	getDisplayText(): string {
+		return this.file?.basename ?? '';
+	}
+	canAcceptExtension(_ext: string): boolean {
+		return true;
+	}
+	getState(): Record<string, unknown> {
+		return {};
+	}
+	setState(_state: Record<string, unknown>): void {}
+}
+
+/**
+ * Minimal `TextFileView` base (kept for backward compatibility with any
+ * remaining references). Extends `FileView` with a `data` buffer.
+ */
+export class TextFileView extends FileView {
+	data = '';
+
 	async save(_clear?: boolean): Promise<void> {}
 
 	getViewData(): string {
@@ -103,6 +122,24 @@ export class TextFileView extends FileView {
 	}
 	clear(): void {
 		this.data = '';
+	}
+}
+
+/**
+ * Minimal `MarkdownView` base. Provides `getMode()` so the view-switch
+ * detection (`detectCurrentView`) can distinguish "Edit MD" (source) from
+ * "View MD" (preview).
+ */
+export class MarkdownView extends FileView {
+	private mode: 'source' | 'preview' = 'source';
+
+	getMode(): 'source' | 'preview' {
+		return this.mode;
+	}
+
+	/** Test helper: flip the mode (mirrors `markdown-toggle-preview`). */
+	setMode(mode: 'source' | 'preview'): void {
+		this.mode = mode;
 	}
 }
 

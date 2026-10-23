@@ -29,12 +29,15 @@ const EMPTY_ATTRIBUTES: StoryAttributes = {
  * - `usm-board` (boolean, case-insensitive) gates map rendering (FR-001).
  * - `usm-release-order` (`appearance` default / `alphabetical`); unknown
  *   values fall back to `appearance` (spec edge case).
+ * - `usm-view` (`map` default / `edit` / `preview`); missing or
+ *   unrecognized values fall back to `map` (FR-026, spec edge case).
  * Unknown attributes are ignored — they never cause an error.
  */
 export function readBoardConfig(app: App, file: TFile): BoardConfig {
 	const config: BoardConfig = {
 		isBoard: false,
 		releaseRowOrder: 'appearance',
+		usmView: 'map',
 	};
 	const cache = app.metadataCache.getFileCache(file);
 	const frontmatter = cache?.frontmatter;
@@ -52,6 +55,14 @@ export function readBoardConfig(app: App, file: TFile): BoardConfig {
 					config.releaseRowOrder = 'alphabetical';
 				}
 				// 'appearance' and any unknown value → default.
+			}
+		} else if (key === 'usm-view') {
+			if (typeof rawValue === 'string') {
+				const view = rawValue.trim().toLowerCase();
+				if (view === 'map' || view === 'edit' || view === 'preview') {
+					config.usmView = view;
+				}
+				// Any other value → default 'map' (FR-026 edge case).
 			}
 		}
 		// All other attributes are ignored (spec edge case).

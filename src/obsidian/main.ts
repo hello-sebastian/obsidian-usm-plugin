@@ -3,8 +3,7 @@ import { DEFAULT_SETTINGS, UsmSettings, UsmSettingTab } from './settings';
 import {
 	BOARD_VIEW_TYPE,
 	BoardView,
-	registerBoardFileRouting,
-	registerBoardViewCommands,
+	registerBoardViewRouting,
 } from './board-view';
 
 /**
@@ -20,18 +19,17 @@ export default class UsmPlugin extends Plugin {
 	async onload() {
 		await this.loadSettings();
 
-		// Register the board view type (T010/T012). The view reads the
+		// Register the board view type (T045/T048). The view reads the
 		// `debugMode` setting live so the metrics panel (T022) reacts to
 		// setting changes without a restart.
 		this.registerView(BOARD_VIEW_TYPE, (leaf) =>
 			new BoardView(leaf, () => this.settings.debugMode),
 		);
 
-		// Register the map/markdown toggle commands (T010).
-		registerBoardViewCommands(this);
-
-		// Route board notes (usm-board: true) to the board view (T012).
-		registerBoardFileRouting(this);
+		// Restore and persist the last-selected view for board notes
+		// (T047). No command-palette commands are registered (FR-002):
+		// view switching uses Obsidian's native "change view" picker.
+		registerBoardViewRouting(this);
 
 		// Register the settings tab (T021).
 		this.addSettingTab(new UsmSettingTab(this));

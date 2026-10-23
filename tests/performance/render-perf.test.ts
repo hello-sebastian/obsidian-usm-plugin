@@ -40,7 +40,7 @@ const STORY_COUNT = 30000;
 
 const COLUMN_COUNT = ACTIVITY_COUNT * TASKS_PER_ACTIVITY * EPICS_PER_TASK;
 
-const CONFIG: BoardConfig = { isBoard: true, releaseRowOrder: 'appearance' };
+const CONFIG: BoardConfig = { isBoard: true, releaseRowOrder: 'appearance', usmView: 'map' };
 
 const BASELINE_PATH = join(
 	dirname(fileURLToPath(import.meta.url)),

@@ -27,10 +27,12 @@ import type {
 const APPEARANCE: BoardConfig = {
 	isBoard: true,
 	releaseRowOrder: 'appearance',
+	usmView: 'map',
 };
 const ALPHABETICAL: BoardConfig = {
 	isBoard: true,
 	releaseRowOrder: 'alphabetical',
+	usmView: 'map',
 };
 
 /** Build a story entry with sensible defaults (all attributes missing). */

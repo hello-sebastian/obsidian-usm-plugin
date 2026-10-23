@@ -67,6 +67,14 @@ export interface BoardConfig {
 	 * Unknown values fall back to `appearance`.
 	 */
 	releaseRowOrder: 'appearance' | 'alphabetical';
+	/**
+	 * Last-selected view type (FR-026). `map` (visual map, default),
+	 * `edit` (standard Markdown editor), `preview` (standard Markdown
+	 * preview). Read when the board note is opened (restores the view);
+	 * written back when the user switches views. Missing or unrecognized
+	 * values fall back to `map`.
+	 */
+	usmView: 'map' | 'edit' | 'preview';
 }
 
 /**

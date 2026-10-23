@@ -1,5 +1,5 @@
 /**
- * Integration tests for live updates and read-only enforcement (T019, T020,
+ * Integration tests for live updates and read-only enforcement (T019, T049,
  * US6).
  *
  * T019 (FR-013, SC-005): the board view registers `metadataCache.on('changed')`
@@ -7,12 +7,13 @@
  * story files, and debounces them so a burst of edits triggers a single model
  * rebuild + re-render that completes well within the 2-second budget.
  *
- * T020 (FR-015, FR-017, SC-004): the map is read-only — `save()` is a no-op
- * that never writes to the vault, and the map container suppresses the native
- * context menu so no mutation actions are offered.
+ * T049 (FR-015, FR-017, FR-028, SC-004): the map is read-only — the view
+ * never writes to the vault (the only sanctioned board-file mutation is the
+ * `usm-view` attribute, exercised separately), and the map container
+ * suppresses the native context menu so no mutation actions are offered.
  *
  * The `obsidian` package is types-only (no runtime), so it is mocked here with
- * a minimal `TextFileView`/`FileView`/`setIcon` surface. The test runs in
+ * a minimal `FileView`/`MarkdownView` surface. The test runs in
  * jsdom (dev-only) and patches Obsidian's `HTMLElement` extensions
  * (`createDiv`, `setText`, `empty`, …) onto the native prototype so the real
  * renderer and story-card code can build the DOM.
@@ -195,16 +196,7 @@ const storyContent = (release: string): string =>
 		'\n',
 	);
 
-/**
- * `onOpen`/`onClose` are `protected` on `BoardView`; expose them for the
- * test harness via a narrow cast (the real lifecycle is driven by Obsidian).
- */
-type BoardViewLifecycle = {
-	onOpen(): Promise<void>;
-	onClose(): Promise<void>;
-};
-
-/** Build a vault + an opened board view in map mode. */
+/** Build a vault + an opened board view rendering the map. */
 async function setupView(
 	boardLinks: string[] = ['[[S1]]'],
 	storyRelease = 'R1',
@@ -218,10 +210,11 @@ async function setupView(
 	// Debug mode is off in the test harness (T022 changed the constructor
 	// to take a `getDebugMode` getter).
 	const view = new BoardView(leaf as never, () => false);
+	// `onload` registers the live-update event handlers (T019); the real
+	// lifecycle is driven by Obsidian, so the harness calls it directly.
+	view.onload();
 	view.file = vault.file(BOARD);
-	view.data = boardContent(boardLinks);
 	await view.onLoadFile(vault.file(BOARD));
-	await (view as unknown as BoardViewLifecycle).onOpen();
 	return { view, vault };
 }
 
@@ -246,7 +239,7 @@ afterEach(() => {
 describe('T019 — event-driven live updates (FR-013, SC-005)', () => {
 	it('re-renders the map when a linked story file changes (debounced)', async () => {
 		const { view, vault } = await setupView();
-		expect(view.mode).toBe('map');
+		expect(view.getModel()).not.toBeNull();
 		expect(cardCount(view)).toBe(1);
 		expect(view.getModel()?.releases).toEqual(['R1']);
 
@@ -302,9 +295,11 @@ describe('T019 — event-driven live updates (FR-013, SC-005)', () => {
 		expect(view.getModel()?.releases).toEqual(['R5']);
 	});
 
-	it('does not re-render while in markdown mode', async () => {
+	it('does not re-render when the map is not displayed', async () => {
 		const { view, vault } = await setupView();
-		view.setMode('markdown');
+		// Unload the file: the map is cleaned up (the user switched to the
+		// standard Markdown view via the native picker).
+		await view.onUnloadFile(vault.file(BOARD));
 		const renderSpy = vi.spyOn(BoardRenderer.prototype, 'render');
 		renderSpy.mockClear();
 
@@ -327,15 +322,17 @@ describe('T019 — event-driven live updates (FR-013, SC-005)', () => {
 	});
 });
 
-describe('T020 — read-only enforcement (FR-015, FR-017, SC-004)', () => {
-	it('save() is a no-op and never writes to the vault', async () => {
+describe('T049 — read-only enforcement (FR-015, FR-017, FR-028, SC-004)', () => {
+	it('the view never writes to the vault while rendering the map', async () => {
 		const { view, vault } = await setupView();
-		const before = view.data;
 
-		await view.save();
+		// Simulate a live update: the map re-renders but never writes.
+		vault.modify(STORY, storyContent('R2'));
+		vault.fire('changed', vault.file(STORY));
+		vi.advanceTimersByTime(250);
 
 		expect(vault.writeSpy).not.toHaveBeenCalled();
-		expect(view.data).toBe(before);
+		expect(view.getModel()?.releases).toEqual(['R2']);
 	});
 
 	it('suppresses the native context menu on the map container', async () => {

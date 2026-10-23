@@ -11,7 +11,7 @@ import { buildGridModel } from '../../src/domain/board-model';
 import { UNASSIGNED, cellKey, normalizeKey } from '../../src/domain/types';
 import type { BoardConfig, StoryEntry } from '../../src/domain/types';
 
-const CONFIG: BoardConfig = { isBoard: true, releaseRowOrder: 'appearance' };
+const CONFIG: BoardConfig = { isBoard: true, releaseRowOrder: 'appearance', usmView: 'map' };
 
 describe('test infrastructure smoke test (T027)', () => {
 	it('resolves pure source modules under the node environment', () => {

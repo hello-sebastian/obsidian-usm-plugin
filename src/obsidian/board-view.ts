@@ -1,38 +1,35 @@
 /**
- * Board view (T010) — dual-mode view for board notes (research R-01).
+ * Board view (T045) — map-only FileView for board notes (research R-01, R-14).
  *
- * Subclasses `TextFileView` with a custom view type (`usm-board-view`).
- * When the opened file is a board note (`usm-board: true`), the view
- * renders the visual map container instead of the raw Markdown source.
- * A pane header icon and command-palette commands toggle between the two
- * modes within the same leaf without ever modifying the file (FR-001,
- * FR-002, SC-004).
+ * Subclasses `FileView` with a custom view type (`usm-board-view`). The view
+ * renders ONLY the visual map — no plugin-provided text display (FR-025).
+ * Text display and editing are always Obsidian's standard Markdown view
+ * ("Edit MD" / "View MD"). The plugin provides no pane header icon and no
+ * command-palette command for switching (FR-002); view switching uses
+ * Obsidian's native "change view" picker, which presents exactly three
+ * options for a board note: "USM board", "Edit MD", "View MD" (FR-027).
  *
- * The map is read-only (FR-015): the "markdown" mode renders the raw
- * source as inert text so the file content is never changed by the view.
+ * The last-selected view is persisted as the `usm-view` frontmatter
+ * attribute (`map` / `edit` / `preview`, default `map`) and restored when
+ * the note is reopened (FR-026). See {@link writeUsmView} and
+ * {@link registerBoardViewRouting}.
  *
- * T019 adds event-driven live updates: `metadataCache.on('changed')` and
- * `vault.on('modify')` are filtered to the board file and its linked story
- * files, then debounced so a burst of edits triggers a single model rebuild
- * + re-render within 2 seconds (FR-013, SC-005; research R-03).
+ * Live updates (T019): `metadataCache.on('changed')` and `vault.on('modify')`
+ * are filtered to the board file and its linked story files, then debounced
+ * so a burst of edits triggers a single model rebuild + re-render within 2
+ * seconds (FR-013, SC-005; research R-03).
  *
- * T020 enforces read-only behavior: `save()` is a no-op so the view never
- * writes to the vault, and the map exposes no editing affordances (FR-015,
- * FR-017, SC-004).
- *
- * NOTE: The full 2D grid rendering is provided by T011
- * (`board-renderer.ts`); this view creates the map container and a
- * placeholder that T011 replaces.
+ * Read-only (T049): the map exposes no editing affordances; the only
+ * board-file mutation is the `usm-view` attribute (FR-026, FR-028).
  */
 import {
 	App,
 	FileView,
+	MarkdownView,
 	Plugin,
-	TextFileView,
 	TAbstractFile,
 	TFile,
 	WorkspaceLeaf,
-	setIcon,
 } from 'obsidian';
 import { t } from '../ui/en';
 import { readBoardConfig, parseBoardEntries } from './board-parser';
@@ -45,24 +42,18 @@ import type { GridModel } from '../domain/types';
 /** Custom view type for the board view (stable once released). */
 export const BOARD_VIEW_TYPE = 'usm-board-view';
 
-/** The two display modes of the board view. */
-export type BoardViewMode = 'map' | 'markdown';
+/** The three view types (FR-026). */
+export type UsmView = 'map' | 'edit' | 'preview';
 
 /**
  * Dual-mode view for board notes. See the module doc for the design.
  */
-export class BoardView extends TextFileView {
-	/** Current display mode. */
-	mode: BoardViewMode = 'markdown';
-
-	/** The map container element (present only in map mode). */
+export class BoardView extends FileView {
+	/** The map container element (present only while the map is rendered). */
 	private mapContainerEl: HTMLElement | null = null;
 
 	/** The last built grid model (used by the renderer / debug panel). */
 	private model: GridModel | null = null;
-
-	/** The pane header toggle action element (for icon/title updates). */
-	private toggleActionEl: HTMLElement | null = null;
 
 	/**
 	 * Debounced map refresh (T019, FR-013). Coalesces bursts of
@@ -93,6 +84,9 @@ export class BoardView extends TextFileView {
 	constructor(leaf: WorkspaceLeaf, getDebugMode: () => boolean) {
 		super(leaf);
 		this.icon = 'layout-dashboard';
+		// The view can be opened without a file (e.g. an empty leaf); the
+		// map simply renders nothing until a board note is opened.
+		this.allowNoFile = true;
 		this.getDebugMode = getDebugMode;
 		this.refreshDebounced = debounce(() => this.refreshMap(), 250);
 	}
@@ -101,51 +95,26 @@ export class BoardView extends TextFileView {
 		return BOARD_VIEW_TYPE;
 	}
 
+	/**
+	 * The label shown in Obsidian's native "change view" picker (FR-027)
+	 * and as the tab fallback.
+	 */
 	getDisplayText(): string {
-		return this.file?.basename ?? t('view.board');
-	}
-
-	// --- TextFileView abstract members (no real editor; data is inert) ---
-
-	getViewData(): string {
-		return this.data;
-	}
-
-	setViewData(data: string, clear: boolean): void {
-		if (clear) {
-			this.clear();
-		}
-		this.data = data;
-	}
-
-	clear(): void {
-		this.data = '';
-		this.model = null;
-		this.relevantPaths = new Set();
-		this.mapContainerEl?.empty();
-		this.mapContainerEl = null;
-		this.debugPanel?.stop();
-		this.debugPanel = null;
+		return t('view.board');
 	}
 
 	/**
-	 * Read-only enforcement (T020, FR-015, FR-017): the view never writes
-	 * to the vault. `TextFileView.save()` would persist `this.data` back to
-	 * the file, but the map is a read-only projection — all editing happens
-	 * in the standard Markdown editor. Overriding `save()` as a no-op
-	 * guarantees the board note and story notes are never modified by the
-	 * plugin, so the board note remains a readable, bulleted list of links
-	 * in standard Markdown even after the plugin is disabled.
+	 * Whether this view can accept a file with the given extension.
+	 * Board notes are Markdown files.
 	 */
-	async save(_clear?: boolean): Promise<void> {
-		// Intentionally empty — the view is read-only.
+	canAcceptExtension(ext: string): boolean {
+		return ext === 'md';
 	}
 
-	// --- Lifecycle ---
+	// --- FileView lifecycle ---
 
-	protected async onOpen(): Promise<void> {
-		await super.onOpen();
-		this.registerToggleAction();
+	onload(): void {
+		super.onload();
 		this.registerLiveUpdateEvents();
 	}
 
@@ -153,25 +122,26 @@ export class BoardView extends TextFileView {
 		this.refreshDebounced.cancel();
 		this.debugPanel?.stop();
 		this.debugPanel = null;
-		this.toggleActionEl = null;
 		this.mapContainerEl = null;
+		this.model = null;
+		this.relevantPaths = new Set();
 		await super.onClose();
 	}
 
 	async onLoadFile(file: TFile): Promise<void> {
 		await super.onLoadFile(file);
-		this.applyModeForFile(file);
+		this.render();
 	}
 
 	async onUnloadFile(_file: TFile): Promise<void> {
-		this.resetToMarkdownMode();
+		this.cleanupRender();
 		await super.onUnloadFile(_file);
 	}
 
 	async onRename(file: TFile): Promise<void> {
 		await super.onRename(file);
 		if (this.file === file) {
-			this.applyModeForFile(file);
+			this.render();
 		}
 	}
 
@@ -188,80 +158,36 @@ export class BoardView extends TextFileView {
 		return readBoardConfig(this.app, file).isBoard;
 	}
 
-	/**
-	 * Choose the display mode for a file: board notes open in map mode,
-	 * everything else in markdown mode (the plugin does not interfere with
-	 * non-board notes — spec US1 scenario 2).
-	 */
-	applyModeForFile(file: TFile): void {
-		this.setMode(this.isBoardFile(file) ? 'map' : 'markdown');
-	}
-
-	// --- Mode control ---
-
-	/**
-	 * Set the display mode and re-render. Setting map mode on a non-board
-	 * file is a no-op (defensive).
-	 */
-	setMode(mode: BoardViewMode): void {
-		if (this.file === null) {
-			return;
-		}
-		if (mode === 'map' && !this.isBoardFile(this.file)) {
-			return;
-		}
-		this.mode = mode;
-		this.render();
-		this.updateToggleAction();
-	}
-
-	/** Toggle between map and markdown mode (pane header icon). */
-	toggleMode(): void {
-		if (this.file === null) {
-			return;
-		}
-		if (this.mode === 'map') {
-			this.setMode('markdown');
-		} else if (this.isBoardFile(this.file)) {
-			this.setMode('map');
-		}
-	}
-
-	private resetToMarkdownMode(): void {
-		this.mode = 'markdown';
-		this.model = null;
-		this.relevantPaths = new Set();
-		this.mapContainerEl = null;
-		this.render();
-		this.updateToggleAction();
-	}
-
 	// --- Rendering ---
 
+	/**
+	 * Render the view content. The view renders ONLY the visual map
+	 * (FR-025). If the current file is not a board note, nothing is
+	 * rendered (the user should switch to the standard Markdown view via
+	 * the native picker).
+	 */
 	private render(): void {
 		if (this.file === null) {
 			this.contentEl.empty();
 			return;
 		}
-		if (this.mode === 'map') {
+		if (this.isBoardFile(this.file)) {
 			this.renderMap();
 		} else {
-			this.renderMarkdown();
+			this.cleanupRender();
 		}
 	}
 
 	/**
-	 * Render the raw Markdown source as inert text (read-only, FR-015).
-	 * The file content is never modified by the view (SC-004).
+	 * Clean up the renderer, debug panel, and model.
 	 */
-	private renderMarkdown(): void {
-		this.contentEl.empty();
+	private cleanupRender(): void {
+		this.model = null;
+		this.relevantPaths = new Set();
+		this.mapContainerEl?.empty();
 		this.mapContainerEl = null;
-		this.contentEl.createEl('pre', {
-			cls: 'usm-board-source',
-			text: this.data,
-		});
-		this.syncDebugPanel();
+		this.debugPanel?.stop();
+		this.debugPanel = null;
 	}
 
 	/**
@@ -322,7 +248,7 @@ export class BoardView extends TextFileView {
 	 * overhead when disabled (research R-07, quickstart Q7).
 	 */
 	private syncDebugPanel(): void {
-		const shouldShow = this.mode === 'map' && this.getDebugMode();
+		const shouldShow = this.mapContainerEl !== null && this.getDebugMode();
 		if (shouldShow) {
 			if (this.debugPanel === null) {
 				this.debugPanel = new DebugPanel(this.containerEl, () =>
@@ -369,7 +295,7 @@ export class BoardView extends TextFileView {
 	 * so the parameter is widened to `TAbstractFile`; only the `path` is read.
 	 */
 	private handleFileChange(file: TAbstractFile): void {
-		if (this.mode !== 'map') {
+		if (this.mapContainerEl === null) {
 			return;
 		}
 		if (this.file === null) {
@@ -387,9 +313,6 @@ export class BoardView extends TextFileView {
 	 * and the DOM is re-rendered (research R-03).
 	 */
 	private refreshMap(): void {
-		if (this.mode !== 'map') {
-			return;
-		}
 		if (this.file === null) {
 			return;
 		}
@@ -397,47 +320,6 @@ export class BoardView extends TextFileView {
 			return;
 		}
 		this.renderMap();
-	}
-
-	// --- Pane header toggle ---
-
-	private registerToggleAction(): void {
-		this.toggleActionEl = this.addAction(
-			this.toggleIcon(),
-			this.toggleTooltip(),
-			(_evt: MouseEvent) => {
-				this.toggleMode();
-			},
-		);
-		this.updateToggleAction();
-	}
-
-	private updateToggleAction(): void {
-		if (this.toggleActionEl === null) {
-			return;
-		}
-		// Update the icon and tooltip to reflect the mode we would switch to.
-		const tooltip = this.toggleTooltip();
-		this.toggleActionEl.setAttribute('aria-label', tooltip);
-		this.toggleActionEl.title = tooltip;
-		const iconContainer = this.toggleActionEl.querySelector(
-			'.view-action-icon',
-		);
-		if (iconContainer instanceof HTMLElement) {
-			setIcon(iconContainer, this.toggleIcon());
-		}
-	}
-
-	/** Icon shown in the header: the mode we would switch TO. */
-	private toggleIcon(): string {
-		return this.mode === 'map' ? 'file-text' : 'layout-dashboard';
-	}
-
-	/** Tooltip for the header icon: the mode we would switch TO. */
-	private toggleTooltip(): string {
-		return this.mode === 'map'
-			? t('view.tooltip.open-markdown')
-			: t('view.tooltip.open-map');
 	}
 
 	/** The last built grid model (for the renderer / debug panel). */
@@ -469,78 +351,163 @@ export function refreshBoardDebugPanels(app: App): void {
 }
 
 /**
- * Find the active BoardView, if any (the most recent leaf's view).
- */
-export function getActiveBoardView(app: App): BoardView | null {
-	const leaf = app.workspace.getMostRecentLeaf();
-	if (leaf === null) {
-		return null;
-	}
-	const view = leaf.view;
-	return view instanceof BoardView ? view : null;
-}
-
-/**
- * Register the command-palette commands that toggle the board view mode
- * (T010). Called from the plugin lifecycle (T012).
- */
-export function registerBoardViewCommands(plugin: Plugin): void {
-	plugin.addCommand({
-		id: 'usm-open-as-map',
-		name: t('command.open-as-map'),
-		callback: () => {
-			const view = getActiveBoardView(plugin.app);
-			if (view !== null) {
-				view.setMode('map');
-			}
-		},
-	});
-	plugin.addCommand({
-		id: 'usm-open-as-markdown',
-		name: t('command.open-as-markdown'),
-		callback: () => {
-			const view = getActiveBoardView(plugin.app);
-			if (view !== null) {
-				view.setMode('markdown');
-			}
-		},
-	});
-}
-
-/**
- * Route board notes (`usm-board: true`) to the board view (T012).
+ * Write the `usm-view` value to the board file frontmatter (T046, FR-026).
  *
- * When a board note is opened in a non-board view (e.g., the standard
- * Markdown view), the leaf is re-routed to the board view so the note
- * displays as a visual map (US1 acceptance scenario 1). Non-board notes
- * are never touched (US1 acceptance scenario 2). The re-route preserves
- * the file and is idempotent: a file already in the board view is left
- * alone, so the map/markdown toggle (T010) is never overridden.
+ * Uses `vault.process()` for an atomic read-modify-write. Skips the write
+ * when the new value equals the current frontmatter value (no-op writes
+ * avoided, R-15). The write is the only frontmatter mutation the plugin
+ * performs (FR-028).
+ *
+ * @param app - The Obsidian app.
+ * @param file - The board file.
+ * @param view - The view value to write.
  */
-export function registerBoardFileRouting(plugin: Plugin): void {
+export async function writeUsmView(
+	app: App,
+	file: TFile,
+	view: UsmView,
+): Promise<void> {
+	const config = readBoardConfig(app, file);
+	if (config.usmView === view) {
+		return; // No-op: the value is already correct.
+	}
+	await app.vault.process(file, (data) =>
+		updateUsmViewInContent(data, view),
+	);
+}
+
+/**
+ * Update the `usm-view` value in the raw file content (T046).
+ *
+ * If the file has frontmatter, the `usm-view` line is updated (or added).
+ * If the file has no frontmatter, a new frontmatter block is prepended.
+ *
+ * @param data - The raw file content.
+ * @param view - The view value to write.
+ * @returns The updated file content.
+ */
+function updateUsmViewInContent(data: string, view: UsmView): string {
+	const viewLine = `usm-view: ${view}`;
+	const fmMatch = data.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+	if (fmMatch === null) {
+		// No frontmatter: prepend a new block.
+		return `---\n${viewLine}\n---\n${data}`;
+	}
+	const lines = (fmMatch[1] ?? '').split(/\r?\n/);
+	let replaced = false;
+	for (let i = 0; i < lines.length; i += 1) {
+		if (/^\s*usm-view\s*:/i.test(lines[i] ?? '')) {
+			lines[i] = viewLine;
+			replaced = true;
+			break;
+		}
+	}
+	if (!replaced) {
+		lines.unshift(viewLine);
+	}
+	const newFm = `---\n${lines.join('\n')}\n---`;
+	return data.replace(fmMatch[0], newFm);
+}
+
+/**
+ * Register the file-open handler that restores and persists the
+ * `usm-view` for board notes (T047, FR-026, FR-027).
+ *
+ * On each activation of a board note:
+ * (a) read `usm-view` from the frontmatter;
+ * (b) if the value is `map` (or missing/unrecognized) and the active leaf
+ *     is not already the custom view, switch the leaf to the
+ *     `usm-board-view`; if the value is `edit`/`preview`, ensure the native
+ *     `MarkdownView` is in the corresponding mode (source/preview);
+ * (c) detect the currently-active view and, when it differs from the
+ *     frontmatter value, call the `usm-view` write (T046).
+ *
+ * Called from the plugin lifecycle (T048).
+ */
+export function registerBoardViewRouting(plugin: Plugin): void {
 	const app = plugin.app;
 	plugin.registerEvent(
 		app.workspace.on('file-open', (file) => {
 			if (file === null) {
 				return;
 			}
-			if (!readBoardConfig(app, file).isBoard) {
+			const config = readBoardConfig(app, file);
+			if (!config.isBoard) {
 				return;
 			}
+			const desiredView = config.usmView;
 			const leaf = findLeafWithFile(app, file);
 			if (leaf === null) {
 				return;
 			}
-			if (leaf.view instanceof BoardView) {
+			const currentView = detectCurrentView(leaf.view);
+
+			// If the current view matches the frontmatter, do nothing.
+			if (currentView === desiredView) {
 				return;
 			}
-			const state = leaf.getViewState();
-			void leaf.setViewState({
-				type: BOARD_VIEW_TYPE,
-				state: state.state,
-			});
+
+			// A fresh open always lands in the default Markdown source view
+			// ('edit'). When the frontmatter records a different view (or the
+			// current view is unknown), this is the "open" case: restore the
+			// last-selected view (step b). A user switch to the default 'edit'
+			// view is indistinguishable from a fresh open and is treated as a
+			// fresh open — a documented limitation of the event-based
+			// detection (research R-16).
+			if (currentView === 'edit' || currentView === null) {
+				restoreView(leaf, file, desiredView);
+				return;
+			}
+
+			// Otherwise, the user switched to a non-default view (map/preview)
+			// (step c). Persist the current view.
+			void writeUsmView(app, file, currentView);
 		}),
 	);
+}
+
+/**
+ * Detect the current view type for a leaf (T047).
+ *
+ * @param view - The view in the leaf.
+ * @returns The view type ('map', 'edit', or 'preview'), or null if unknown.
+ */
+function detectCurrentView(view: unknown): UsmView | null {
+	if (view instanceof BoardView) {
+		return 'map';
+	}
+	if (view instanceof MarkdownView) {
+		return view.getMode() === 'source' ? 'edit' : 'preview';
+	}
+	return null;
+}
+
+/**
+ * Restore the view for a board note (T047, step b).
+ *
+ * Sets the leaf's view state to the desired view. For `map`, the leaf is
+ * switched to the custom board view; for `edit`/`preview`, the leaf is
+ * switched to the native Markdown view in the corresponding mode
+ * (source/preview). Using `setViewState` (rather than a command) keeps the
+ * code fully typed and works regardless of the leaf's current view.
+ *
+ * @param leaf - The workspace leaf.
+ * @param file - The board file.
+ * @param view - The view to restore.
+ */
+function restoreView(leaf: WorkspaceLeaf, file: TFile, view: UsmView): void {
+	if (view === 'map') {
+		void leaf.setViewState({
+			type: BOARD_VIEW_TYPE,
+			state: { file: file.path },
+		});
+	} else {
+		const mode = view === 'edit' ? 'source' : 'preview';
+		void leaf.setViewState({
+			type: 'markdown',
+			state: { file: file.path, mode },
+		});
+	}
 }
 
 /**

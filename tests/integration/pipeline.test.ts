@@ -50,7 +50,11 @@ function runPipeline(fixture: FixtureApp, boardPath: string): {
 describe('pipeline — fixture board end to end (SC-002, SC-003)', () => {
 	it('parses the board config from the fixture frontmatter (FR-001, FR-006)', () => {
 		const { config } = runPipeline(loadFixtureApp(), 'board.md');
-		expect(config).toEqual({ isBoard: true, releaseRowOrder: 'appearance' });
+		expect(config).toEqual({
+			isBoard: true,
+			releaseRowOrder: 'appearance',
+			usmView: 'map',
+		});
 	});
 
 	it('produces one entry per wikilink occurrence, in order (FR-003, FR-018)', () => {

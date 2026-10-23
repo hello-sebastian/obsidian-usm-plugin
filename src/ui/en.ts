@@ -10,16 +10,8 @@ export const en: Record<string, string> = {
 	// "Unassigned" section label (per-level: column group / sub-column / row)
 	'unassigned': 'Unassigned',
 
-	// Command names
-	'command.open-as-map': 'Open as User Story Map',
-	'command.open-as-markdown': 'Open as Markdown',
-
-	// Pane header icon tooltips
-	'view.tooltip.open-map': 'Open as User Story Map',
-	'view.tooltip.open-markdown': 'Open as Markdown',
-
-	// View display text (tab title suffix / aria)
-	'view.board': 'User Story Map',
+	// View display name (native view picker label + tab fallback, FR-027)
+	'view.board': 'USM board',
 
 	// Settings tab (T021)
 	'settings.debug-mode': 'Debug mode',
