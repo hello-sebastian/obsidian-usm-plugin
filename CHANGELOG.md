@@ -9,6 +9,15 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- **Constitution v1.6.3 (PATCH)** — added the *Sequencing Gate* to the
+  Logical Atomicity Protocol (*Immediate Checkpointing & Progress Tracking*):
+  the agent MUST NOT begin task N+1 until task N is marked `[x]` in
+  `tasks.md`; the checkoff and the task's code changes land in the same
+  commit; after any interruption or context compaction the agent re-reads
+  `tasks.md` and checks off completed-but-unmarked tasks first. Enforced via
+  the project-local `usm.task-protocol` SpecKit extension
+  (`.specify/extensions.yml` + `.github/skills/usm-task-protocol/`), which
+  survives `speckit update`.
 - **Constitution v1.6.2 (PATCH)** — recorded the one-time TDD grandfathering
   for the foundational data pipeline (implemented 2026-10-16, before the TDD
   rule was ratified in v1.5.0); its regression tests establish the baseline.

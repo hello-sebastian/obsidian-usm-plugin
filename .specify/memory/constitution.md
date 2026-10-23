@@ -111,6 +111,7 @@ This constitution governs the development, maintenance, and evolution of the **O
 - **Immediate Checkpointing & Progress Tracking:**
   - **Sequential Execution:** The agent executes tasks sequentially, step by step.
   - **Immediate Task Checkoff:** Immediately after successfully completing and verifying a task, the agent MUST edit `tasks.md` and change the task status from `` `[ ]` `` to `` `[x]` ``. Batch checkoff of tasks at the end of a session is forbidden.
+  - **Sequencing Gate (v1.6.3):** The agent MUST NOT begin task N+1 until task N is marked `[x]` in `tasks.md`. The checkoff and the task's code changes MUST land in the same commit, so the git history is an auditable per-task trail. After any session interruption or context compaction, the agent MUST re-read `tasks.md` and check off completed-but-unmarked tasks before starting new work.
 
 ## Governance
 
@@ -119,4 +120,4 @@ This constitution governs the development, maintenance, and evolution of the **O
 - **Versioning policy:** The constitution version follows semantic versioning (MAJOR.MINOR.PATCH). MAJOR: backward-incompatible removal or redefinition of a principle. MINOR: a new principle/section added or materially expanded guidance. PATCH: clarifications, wording, or typo fixes.
 - **Compliance review:** A constitution compliance review is a mandatory checkpoint when accepting a PR and before releasing any production version.
 
-**Version**: 1.6.2 | **Ratified**: 2026-10-14 | **Last Amended**: 2026-10-17
+**Version**: 1.6.3 | **Ratified**: 2026-10-14 | **Last Amended**: 2026-10-23

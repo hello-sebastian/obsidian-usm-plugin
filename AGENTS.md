@@ -260,6 +260,15 @@ this.registerInterval(
 - Settings not persisting: ensure `loadData`/`saveData` are awaited and you re-render the UI after changes.
 - Mobile-only issues: confirm you're not using desktop-only APIs; check `isDesktopOnly` and adjust.
 
+## SpecKit execution protocol (per-task checkoff)
+
+- When executing `/speckit-implement`, follow the **Logical Atomicity Protocol** (Constitution, *Task Breakdown & Execution Rules*):
+  - After each task is implemented and verified, **immediately** mark it `[X]` in `tasks.md` — batch checkoff at the end of a session is forbidden.
+  - Do **not** start task N+1 until task N is marked `[X]` (Sequencing Gate, constitution v1.6.3).
+  - Commit the task's code changes together with its `tasks.md` checkoff.
+  - After any interruption or context compaction, re-read `tasks.md` first and check off completed-but-unmarked tasks before starting new work.
+- The protocol is injected by the `usm.task-protocol` hook (`.specify/extensions.yml`) and defined in `.github/skills/usm-task-protocol/SKILL.md` (project-local — survives `speckit update`).
+
 ## References
 
 - Obsidian sample plugin: https://github.com/obsidianmd/obsidian-sample-plugin
