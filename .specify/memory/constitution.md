@@ -1,3 +1,17 @@
+<!--
+Sync Impact Report (temporary — remove before committing)
+=========================================================
+Version change: 1.6.3 → 1.7.0 (MINOR)
+
+Modified principles:
+- I. Compliance with the Obsidian ecosystem and view architecture
+  (added new bullet: "Official documentation as the source of truth")
+
+Added sections: none
+Removed sections: none
+Follow-up TODOs: none
+-->
+
 # Obsidian User Story Map Plugin Constitution
 
 This constitution governs the development, maintenance, and evolution of the **Obsidian User Story Map** plugin, distributed as an Obsidian Community Plugin via GitHub Releases and the official Obsidian catalog. The document defines the supreme, immutable architectural, quality, and security principles.
@@ -6,6 +20,7 @@ This constitution governs the development, maintenance, and evolution of the **O
 
 ### I. Compliance with the Obsidian ecosystem and view architecture
 
+- **Official documentation as the source of truth:** The primary source of truth for the behavior of the Obsidian environment and the standards within it is the official Obsidian documentation (https://docs.obsidian.md/Home) and the official repository (https://github.com/obsidianmd/obsidian-releases). When in doubt about Obsidian's behavior, API usage, or publishing standards, these authoritative sources MUST take precedence over third-party tutorials, blog posts, or assumptions. Any conflict between this constitution and the official documentation MUST be resolved in favor of the official documentation, and this constitution MUST be amended to reflect it.
 - The plugin MUST strictly adhere to the official Obsidian API guidelines and the Community Plugins catalog publishing rules.
 - The project assumes maintenance-free installation and updates through Obsidian's native mechanism based on the release listing (GitHub Releases), semantic versioning (SemVer), and the `manifest.json` and `versions.json` files, with a clear, maintained changelog.
 - The plugin MUST support multiplatform operation (Desktop and Mobile). Direct references to Node.js / Electron modules (e.g., `fs`, `path`) are forbidden, unless the plugin is explicitly marked as `"isDesktopOnly": true` in `manifest.json`.
@@ -120,4 +135,4 @@ This constitution governs the development, maintenance, and evolution of the **O
 - **Versioning policy:** The constitution version follows semantic versioning (MAJOR.MINOR.PATCH). MAJOR: backward-incompatible removal or redefinition of a principle. MINOR: a new principle/section added or materially expanded guidance. PATCH: clarifications, wording, or typo fixes.
 - **Compliance review:** A constitution compliance review is a mandatory checkpoint when accepting a PR and before releasing any production version.
 
-**Version**: 1.6.3 | **Ratified**: 2026-10-14 | **Last Amended**: 2026-10-23
+**Version**: 1.7.0 | **Ratified**: 2026-10-14 | **Last Amended**: 2026-10-24
