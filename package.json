@@ -6,8 +6,8 @@
 	"type": "module",
 	"scripts": {
 		"dev": "node esbuild.config.mjs",
-		"build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
-		"deploy": "npm run build && mkdir -p \"/Users/sebastian/OneDrive/Aplikacje/Hermes/Hermes-sebastian/.obsidian/plugins/obsidian-usm-plugin\" && cp main.js manifest.json styles.css \"/Users/sebastian/OneDrive/Aplikacje/Hermes/Hermes-sebastian/.obsidian/plugins/obsidian-usm-plugin/\"",
+		"build": "node package_scripts/build.mjs",
+		"deploy": "npm run build && node package_scripts/deploy.mjs",
 		"version": "node version-bump.mjs && git add manifest.json versions.json",
 		"lint": "eslint .",
 		"test": "vitest run",
