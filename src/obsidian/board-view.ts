@@ -4,10 +4,11 @@
  * Subclasses `FileView` with a custom view type (`usm-board-view`). The view
  * renders ONLY the visual map — no plugin-provided text display (FR-025).
  * Text display and editing are always Obsidian's standard Markdown view
- * ("Edit MD" / "View MD"). The plugin provides no pane header icon and no
- * command-palette command for switching (FR-002); view switching uses
- * Obsidian's native "change view" picker, which presents exactly three
- * options for a board note: "USM board", "Edit MD", "View MD" (FR-027).
+ * ("Edit MD" / "View MD"). View switching is offered through a dedicated
+ * pane-header view-switch button (a distinct icon, not "…") that presents
+ * the three options "USM board", "Edit MD", and "View MD" (FR-027, amended);
+ * the button is available in all three view states. No command-palette
+ * command is provided (FR-002, amended). See {@link ensureViewSwitchAction}.
  *
  * The last-selected view is persisted as the `usm-view` frontmatter
  * attribute (`map` / `edit` / `preview`, default `map`) and restored when
@@ -26,13 +27,19 @@ import {
 	App,
 	FileView,
 	MarkdownView,
+	Menu,
 	Plugin,
 	TAbstractFile,
 	TFile,
 	WorkspaceLeaf,
+	type IconName,
 } from 'obsidian';
 import { t } from '../ui/en';
-import { readBoardConfig, parseBoardEntries } from './board-parser';
+import {
+	readBoardConfig,
+	parseBoardEntries,
+	parseBoardConfigFromContent,
+} from './board-parser';
 import { buildGridModel } from '../domain/board-model';
 import { BoardRenderer } from '../ui/board-renderer';
 import { DebugPanel } from '../ui/debug-panel';
@@ -44,6 +51,37 @@ export const BOARD_VIEW_TYPE = 'usm-board-view';
 
 /** The three view types (FR-026). */
 export type UsmView = 'map' | 'edit' | 'preview';
+
+/**
+ * The dedicated view-switch button icon (FR-027, amended). A distinct icon
+ * (not "…") so the pane header's "…" remains the native context menu.
+ */
+const VIEW_SWITCH_ICON: IconName = 'columns-2';
+
+/**
+ * Bounded retry for first-open routing (defect 1). On every fresh open the
+ * leaf may not be ready for `setViewState` when `file-open` fires, so the
+ * routing retries a bounded number of times until the view settles.
+ */
+const ROUTE_MAX_ATTEMPTS = 5;
+const ROUTE_RETRY_DELAY_MS = 50;
+
+/**
+ * Tracks `MarkdownView` instances that already have the dedicated
+ * view-switch button (FR-027, amended), so repeated `file-open` events do
+ * not add a duplicate action. The set is marked synchronously (before the
+ * deferred `addAction`) so concurrent events cannot schedule duplicate adds.
+ */
+const markdownViewsWithSwitchAction = new WeakSet<MarkdownView>();
+
+/**
+ * Maps each `MarkdownView` to the `HTMLElement` returned by
+ * `view.addAction(...)` for the dedicated view-switch button (FR-027,
+ * amended). Provides the handle needed to remove the button when the view
+ * later shows a non-board note (Defect 5). Present only while the button is
+ * actually added (the add is deferred behind an async board check).
+ */
+const markdownViewSwitchActionEls = new WeakMap<MarkdownView, HTMLElement>();
 
 /**
  * Dual-mode view for board notes. See the module doc for the design.
@@ -81,6 +119,13 @@ export class BoardView extends FileView {
 	/** Duration of the last map render in ms (reported to the panel). */
 	private lastRenderMs = 0;
 
+	/**
+	 * The dedicated view-switch button element (FR-027, amended). Present
+	 * once per view instance; null until {@link ensureViewSwitchAction}
+	 * adds it.
+	 */
+	private viewSwitchActionEl: HTMLElement | null = null;
+
 	constructor(leaf: WorkspaceLeaf, getDebugMode: () => boolean) {
 		super(leaf);
 		this.icon = 'layout-dashboard';
@@ -96,19 +141,72 @@ export class BoardView extends FileView {
 	}
 
 	/**
-	 * The label shown in Obsidian's native "change view" picker (FR-027)
-	 * and as the tab fallback.
+	 * The tab / breadcrumb label. Returns the file name when a file is
+	 * loaded so the tab stays consistent with the file list and
+	 * breadcrumbs (a constant "USM board" label previously overrode the
+	 * file name). Falls back to the view label when no file is loaded.
 	 */
 	getDisplayText(): string {
-		return t('view.board');
+		return this.file !== null ? this.file.basename : t('view.board');
 	}
 
 	/**
 	 * Whether this view can accept a file with the given extension.
-	 * Board notes are Markdown files.
+	 *
+	 * Returns `false` for every extension (Defect 1). The board view must
+	 * NOT claim `.md` files for leaf reuse: doing so made Obsidian reuse the
+	 * board leaf when opening a regular `.md` note, which left an empty panel
+	 * (the board view renders nothing for non-board files). Board notes are
+	 * routed into the board view by the `file-open` handler
+	 * (`handleBoardFileOpen` → `restoreView` → `setViewState`), which works
+	 * regardless of `canAcceptExtension`.
 	 */
-	canAcceptExtension(ext: string): boolean {
-		return ext === 'md';
+	canAcceptExtension(_ext: string): boolean {
+		return false;
+	}
+
+	/**
+	 * Ensure the dedicated view-switch button is present in the pane
+	 * header (FR-027, amended). The button is added once per view instance
+	 * (guarded by {@link viewSwitchActionEl}); it opens a menu with the
+	 * three view options, the current one checked. "…" remains the native
+	 * context menu.
+	 */
+	private ensureViewSwitchAction(): void {
+		if (this.viewSwitchActionEl !== null) {
+			return;
+		}
+		this.viewSwitchActionEl = this.addAction(
+			VIEW_SWITCH_ICON,
+			t('view.switch'),
+			(evt) => {
+				const file = this.file;
+				if (file === null) {
+					return;
+				}
+				showViewSwitchMenu(evt, this.currentView(), (view) =>
+					this.switchView(file, view),
+				);
+			},
+		);
+	}
+
+	/**
+	 * The current view for this leaf (FR-027). Used to mark the active
+	 * option in the view-switch menu.
+	 */
+	private currentView(): UsmView {
+		return detectCurrentView(this) ?? 'map';
+	}
+
+	/**
+	 * Switch this leaf to the given view and persist the choice (FR-026).
+	 * Used by the dedicated view-switch button (see
+	 * {@link ensureViewSwitchAction}).
+	 */
+	private switchView(file: TFile, view: UsmView): void {
+		restoreView(this.leaf, file, view);
+		void writeUsmView(this.app, file, view);
 	}
 
 	// --- FileView lifecycle ---
@@ -116,6 +214,7 @@ export class BoardView extends FileView {
 	onload(): void {
 		super.onload();
 		this.registerLiveUpdateEvents();
+		this.ensureViewSwitchAction();
 	}
 
 	protected async onClose(): Promise<void> {
@@ -125,11 +224,16 @@ export class BoardView extends FileView {
 		this.mapContainerEl = null;
 		this.model = null;
 		this.relevantPaths = new Set();
+		this.viewSwitchActionEl = null;
 		await super.onClose();
 	}
 
 	async onLoadFile(file: TFile): Promise<void> {
 		await super.onLoadFile(file);
+		// The view-switch button is added in onload; re-ensure it here as a
+		// safety net in case the action was added before the view finished
+		// loading (FR-027, amended).
+		this.ensureViewSwitchAction();
 		this.render();
 	}
 
@@ -431,39 +535,245 @@ export function registerBoardViewRouting(plugin: Plugin): void {
 			if (file === null) {
 				return;
 			}
-			const config = readBoardConfig(app, file);
-			if (!config.isBoard) {
-				return;
-			}
-			const desiredView = config.usmView;
-			const leaf = findLeafWithFile(app, file);
+			// Ensure the dedicated view-switch button is present in the
+			// active view (FR-027, amended): the plugin's own board view
+			// adds it in onload; the native Markdown view needs it added
+			// here (the plugin cannot extend its pane menu).
+			ensureViewSwitchActionForLeaf(app, file);
+			void handleBoardFileOpen(app, file);
+		}),
+	);
+	// Iteration 3: `file-open` fires only when the active file changes.
+	// A view-type switch (board → Markdown) for the same file does NOT
+	// fire `file-open`, so the button is never added to the new
+	// MarkdownView. `active-leaf-change` fires on every active-leaf
+	// change, including view-type switches (confirmed by bundle analysis
+	// of Obsidian 1.14.5: `setViewState` → `requestActiveLeafEvents()` →
+	// `trigger("active-leaf-change", leaf)`), so we use it to ensure the
+	// button is present after a switch. The handler does NOT call
+	// `handleBoardFileOpen` (the routing logic is already handled by the
+	// `file-open` listener; calling it here would cause unwanted view
+	// switches on tab re-activation).
+	plugin.registerEvent(
+		app.workspace.on('active-leaf-change', (leaf) => {
 			if (leaf === null) {
 				return;
 			}
-			const currentView = detectCurrentView(leaf.view);
-
-			// If the current view matches the frontmatter, do nothing.
-			if (currentView === desiredView) {
-				return;
+			const view = leaf.view;
+			if (view instanceof FileView) {
+				const file = view.file;
+				if (file !== null) {
+					ensureViewSwitchActionForLeaf(app, file);
+					// Defect 4: sync the native source/preview toggle
+					// visibility (hidden for board notes, restored for
+					// non-board notes). Defect 5: also removes the plugin's
+					// view-switch button when the current file is non-board.
+					if (view instanceof MarkdownView) {
+						void syncNativeModeToggle(app, view, file);
+					}
+				}
 			}
-
-			// A fresh open always lands in the default Markdown source view
-			// ('edit'). When the frontmatter records a different view (or the
-			// current view is unknown), this is the "open" case: restore the
-			// last-selected view (step b). A user switch to the default 'edit'
-			// view is indistinguishable from a fresh open and is treated as a
-			// fresh open — a documented limitation of the event-based
-			// detection (research R-16).
-			if (currentView === 'edit' || currentView === null) {
-				restoreView(leaf, file, desiredView);
-				return;
-			}
-
-			// Otherwise, the user switched to a non-default view (map/preview)
-			// (step c). Persist the current view.
-			void writeUsmView(app, file, currentView);
 		}),
 	);
+}
+
+/**
+ * Route a board file on open (T047). Reads the board config from the
+ * metadata cache; when the cache has not indexed the frontmatter yet
+ * (first-open race), falls back to a direct vault read so a board note is
+ * routed to the map view even before the cache is warm (Bug 1). Then
+ * restores the last-selected view or persists the current one, per the
+ * restore-vs-persist logic.
+ *
+ * The routing is tolerant of the leaf not being ready (defect 1): on every
+ * fresh open Obsidian fires `file-open` while the new leaf's view is still
+ * initializing, so a single `setViewState` can be dropped. The routing
+ * therefore retries a bounded number of times (see
+ * {@link scheduleRouteRetry}) until the view settles.
+ *
+ * @param app - The Obsidian app.
+ * @param file - The board file.
+ */
+export async function handleBoardFileOpen(
+	app: App,
+	file: TFile,
+): Promise<void> {
+	await routeBoardFileOpen(app, file, 1);
+}
+
+/**
+ * One routing attempt for a board file (defect 1). Returns `true` when the
+ * routing is complete (the view matches the frontmatter, or the file is not
+ * a board note) and `false` when the leaf is not ready yet and a retry
+ * should be scheduled.
+ */
+async function routeBoardFileOpen(
+	app: App,
+	file: TFile,
+	attempt: number,
+): Promise<boolean> {
+	let config = readBoardConfig(app, file);
+	if (!config.isBoard) {
+		// The metadata cache may not have indexed the frontmatter yet on
+		// the first open. Fall back to a direct vault read so a board note
+		// is routed correctly even before the cache is warm.
+		const data = await app.vault.read(file);
+		config = parseBoardConfigFromContent(data);
+		if (!config.isBoard) {
+			return true; // Not a board note — nothing to route.
+		}
+	}
+	const desiredView = config.usmView;
+	const leaf = findLeafWithFile(app, file);
+	if (leaf === null) {
+		// The leaf is not registered yet (fresh open). Retry until the
+		// bounded budget is exhausted.
+		return scheduleRouteRetry(app, file, desiredView, attempt);
+	}
+	const currentView = detectCurrentView(leaf.view);
+
+	// If the current view matches the frontmatter, the routing is complete.
+	if (currentView === desiredView) {
+		return true;
+	}
+
+	// A fresh open always lands in the default Markdown source view
+	// ('edit'). When the frontmatter records a different view (or the
+	// current view is unknown), this is the "open" case: restore the
+	// last-selected view (step b). A user switch to the default 'edit'
+	// view is indistinguishable from a fresh open and is treated as a
+	// fresh open — a documented limitation of the event-based
+	// detection (research R-16).
+	if (currentView === 'edit' || currentView === null) {
+		restoreView(leaf, file, desiredView);
+		// The `setViewState` may be dropped if the leaf is still
+		// initializing (defect 1). Retry until the view actually settles.
+		return scheduleRouteRetry(app, file, desiredView, attempt);
+	}
+
+	// Otherwise, the user switched to a non-default view (map/preview)
+	// (step c). Persist the current view.
+	void writeUsmView(app, file, currentView);
+	return true;
+}
+
+/**
+ * Schedule a bounded retry of the routing (defect 1). Returns `true` when
+ * the retry budget is exhausted (no more retries) and `false` when a retry
+ * has been scheduled. The retry stops early when the view already matches
+ * the desired view or the file is no longer a board note, so a mere tab
+ * re-activation (view already correct) never triggers a switch or a
+ * spurious write (expected behavior #1).
+ */
+function scheduleRouteRetry(
+	app: App,
+	file: TFile,
+	desiredView: UsmView,
+	attempt: number,
+): boolean {
+	if (attempt >= ROUTE_MAX_ATTEMPTS) {
+		return true; // Budget exhausted — stop retrying.
+	}
+	window.setTimeout(() => {
+		void (async (): Promise<void> => {
+			// Stop early if the view already matches the desired view.
+			const leaf = findLeafWithFile(app, file);
+			if (leaf !== null && detectCurrentView(leaf.view) === desiredView) {
+				return;
+			}
+			// Stop early if the file is no longer a board note (e.g. the
+			// user removed the flag while the retry was pending).
+			if (!(await isBoardFileContent(app, file))) {
+				return;
+			}
+			await routeBoardFileOpen(app, file, attempt + 1);
+		})();
+	}, ROUTE_RETRY_DELAY_MS);
+	return false;
+}
+
+/**
+ * Whether the file's content marks it as a board note (`usm-board: true`),
+ * reading the metadata cache first and falling back to a direct vault read
+ * (defect 1 retry guard).
+ */
+async function isBoardFileContent(app: App, file: TFile): Promise<boolean> {
+	if (readBoardConfig(app, file).isBoard) {
+		return true;
+	}
+	const data = await app.vault.read(file);
+	return parseBoardConfigFromContent(data).isBoard;
+}
+
+/**
+ * Remove the plugin's view-switch button from a `MarkdownView` (Defect 5).
+ * Obsidian has no public `removeAction`, so the element returned by
+ * `addAction` is removed directly from the DOM and dropped from the
+ * tracking structures. Clearing the set lets a later navigation back to a
+ * board note re-add the button (the guard re-enters the add path).
+ *
+ * @param view - The MarkdownView whose plugin button to remove.
+ */
+function removeViewSwitchAction(view: MarkdownView): void {
+	const el = markdownViewSwitchActionEls.get(view);
+	if (el !== undefined) {
+		el.remove();
+	}
+	markdownViewSwitchActionEls.delete(view);
+	markdownViewsWithSwitchAction.delete(view);
+}
+
+/**
+ * Hide or show the native MarkdownView source/preview toggle
+ * (`modeButtonEl`). The property is internal to Obsidian (not in
+ * `obsidian.d.ts`), so access is defensive: a structural cast with an
+ * optional check, and a silent no-op when the element is absent (e.g. a
+ * future Obsidian version renames the property).
+ *
+ * @param view - The MarkdownView whose native toggle to toggle.
+ * @param visible - Whether the native toggle should be visible.
+ */
+function setNativeModeToggleVisible(
+	view: MarkdownView,
+	visible: boolean,
+): void {
+	const el = (view as unknown as { modeButtonEl?: HTMLElement }).modeButtonEl;
+	if (el === undefined || el === null) {
+		return;
+	}
+	if (visible) {
+		el.show();
+	} else {
+		el.hide();
+	}
+}
+
+/**
+ * Synchronize the native MarkdownView source/preview toggle visibility
+ * with the current file's board status. The native toggle is hidden when
+ * the view has the plugin's view-switch button AND the current file is a
+ * board note (to avoid two overlapping view-switch buttons, Defect 4);
+ * it is restored (shown) otherwise.
+ *
+ * @param app - The Obsidian app.
+ * @param view - The MarkdownView to synchronize.
+ * @param file - The file currently shown in the view.
+ */
+async function syncNativeModeToggle(
+	app: App,
+	view: MarkdownView,
+	file: TFile,
+): Promise<void> {
+	const isBoard = await isBoardFileContent(app, file);
+	const hasPluginButton = markdownViewsWithSwitchAction.has(view);
+	// Defect 5: when the view no longer shows a board note, remove the
+	// plugin's view-switch button (it would be inert) so only the native
+	// toggle remains. The delete also clears the tracking structures so a
+	// later navigation back to a board note re-adds the button.
+	if (!isBoard && hasPluginButton) {
+		removeViewSwitchAction(view);
+	}
+	setNativeModeToggleVisible(view, !(hasPluginButton && isBoard));
 }
 
 /**
@@ -514,7 +824,10 @@ function restoreView(leaf: WorkspaceLeaf, file: TFile, view: UsmView): void {
  * Find the leaf that currently has `file` open in a file-backed view
  * (Markdown or board). Returns `null` when no such leaf is found.
  */
-function findLeafWithFile(app: App, file: TFile): WorkspaceLeaf | null {
+export function findLeafWithFile(
+	app: App,
+	file: TFile,
+): WorkspaceLeaf | null {
 	const leaves = [
 		...app.workspace.getLeavesOfType('markdown'),
 		...app.workspace.getLeavesOfType(BOARD_VIEW_TYPE),
@@ -526,4 +839,124 @@ function findLeafWithFile(app: App, file: TFile): WorkspaceLeaf | null {
 		}
 	}
 	return null;
+}
+
+/**
+ * Show the view-switch menu for a board note (FR-027, amended). The menu
+ * lists the three view options with the current one checked. Selecting an
+ * option invokes `onSelect` with the chosen view.
+ *
+ * @param evt - The mouse event that triggered the menu (used to position
+ *     it).
+ * @param current - The current view (used to mark the active option).
+ * @param onSelect - Callback invoked with the chosen view.
+ */
+function showViewSwitchMenu(
+	evt: MouseEvent,
+	current: UsmView,
+	onSelect: (view: UsmView) => void,
+): void {
+	// Build the menu, add the items, then load and show it (Defect 2a).
+	// `Menu.forEvent` (the one-liner) requires Obsidian 1.6.0, so we use
+	// `new Menu()` + `showAtMouseEvent` (available since 0.12.6, below the
+	// 1.1.0 minAppVersion). Two things matter for the menu to actually
+	// appear: the items must be added BEFORE the menu is shown (`addItem`
+	// only works while the menu is not shown yet), and `load()` must be
+	// called so the menu builds its DOM — without it, `showAtMouseEvent`
+	// positions an empty menu and nothing is displayed.
+	const menu = new Menu();
+	const options: Array<{ view: UsmView; label: string; icon: IconName }> = [
+		{ view: 'map', label: t('view.board'), icon: 'layout-dashboard' },
+		{ view: 'edit', label: t('view.edit'), icon: 'pencil' },
+		{ view: 'preview', label: t('view.preview'), icon: 'eye' },
+	];
+	for (const option of options) {
+		menu.addItem((item) => {
+			item
+				.setTitle(option.label)
+				.setIcon(option.icon)
+				.setChecked(option.view === current)
+				.onClick(() => onSelect(option.view));
+		});
+	}
+	menu.load();
+	menu.showAtMouseEvent(evt);
+}
+
+/**
+ * Ensure the dedicated view-switch button is present in the active view
+ * for a board file (FR-027, amended). The plugin's own board view adds the
+ * button in `onload`; the native `MarkdownView` (used for "Edit MD" /
+ * "View MD") needs it added here because the plugin cannot extend its pane
+ * menu. The button is added once per view instance (tracked in
+ * {@link markdownViewsWithSwitchAction}) so repeated `file-open` events do
+ * not duplicate it.
+ *
+ * The action's callback reads the view's current file at click time and
+ * only offers the switch when that file is a board note (a defensive
+ * fallback). When the view later shows a non-board note, the button is
+ * removed entirely (see {@link syncNativeModeToggle}, Defect 5), so the
+ * inert-click path is rarely reached.
+ *
+ * @param app - The Obsidian app.
+ * @param file - The board file.
+ */
+export function ensureViewSwitchActionForLeaf(
+	app: App,
+	file: TFile,
+): void {
+	const leaf = findLeafWithFile(app, file);
+	if (leaf === null) {
+		return;
+	}
+	const view = leaf.view;
+	if (view instanceof BoardView) {
+		// The board view manages its own button (added in onload).
+		return;
+	}
+	if (
+		view instanceof MarkdownView &&
+		!markdownViewsWithSwitchAction.has(view)
+	) {
+		// Mark the view synchronously so concurrent `file-open` events do not
+		// schedule duplicate adds (Defect 2b). The actual `addAction` is
+		// deferred behind an async board check (the metadata cache may not
+		// have indexed the frontmatter yet on the first open).
+		markdownViewsWithSwitchAction.add(view);
+		void (async (): Promise<void> => {
+			// Only add the button for board notes (Defect 2b): non-board notes
+			// keep only Obsidian's native source/preview toggle.
+			if (!(await isBoardFileContent(app, file))) {
+				return;
+			}
+			const actionEl = view.addAction(
+				VIEW_SWITCH_ICON,
+				t('view.switch'),
+				async (evt) => {
+					const currentFile = view.file;
+					if (currentFile === null) {
+						return;
+					}
+					// Defensive re-check at click time (guards against a race
+					// where the file changes between the event and the click;
+					// normally the button is already removed for non-board
+					// files, Defect 5).
+					if (!(await isBoardFileContent(app, currentFile))) {
+						return;
+					}
+					const current = detectCurrentView(view) ?? 'edit';
+					showViewSwitchMenu(evt, current, (chosen) => {
+						restoreView(leaf, currentFile, chosen);
+						void writeUsmView(app, currentFile, chosen);
+					});
+				},
+			);
+			// Store the element so it can be removed when the view later
+			// shows a non-board note (Defect 5).
+			markdownViewSwitchActionEls.set(view, actionEl);
+			// Defect 4: hide the native source/preview toggle — the
+			// plugin's button replaces it for board notes.
+			setNativeModeToggleVisible(view, false);
+		})();
+	}
 }

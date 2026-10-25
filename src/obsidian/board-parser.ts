@@ -71,6 +71,47 @@ export function readBoardConfig(app: App, file: TFile): BoardConfig {
 }
 
 /**
+ * Parse the board-level configuration from raw file content (frontmatter
+ * only). Used as a fallback when the metadata cache has not indexed the
+ * frontmatter yet (first-open race, Bug 1). Mirrors {@link readBoardConfig}
+ * but reads the raw text instead of the cache, so it works before the
+ * cache is warm.
+ */
+export function parseBoardConfigFromContent(data: string): BoardConfig {
+	const config: BoardConfig = {
+		isBoard: false,
+		releaseRowOrder: 'appearance',
+		usmView: 'map',
+	};
+	const fmMatch = data.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+	if (fmMatch === null) {
+		return config;
+	}
+	const lines = (fmMatch[1] ?? '').split(/\r?\n/);
+	for (const line of lines) {
+		const m = line.match(/^\s*([A-Za-z0-9_-]+)\s*:\s*(.*)$/);
+		if (m === null) {
+			continue;
+		}
+		const key = (m[1] ?? '').trim().toLowerCase();
+		const value = (m[2] ?? '').trim().replace(/^["']|["']$/g, '');
+		if (key === 'usm-board') {
+			config.isBoard = value.toLowerCase() === 'true';
+		} else if (key === 'usm-release-order') {
+			if (value === 'alphabetical') {
+				config.releaseRowOrder = 'alphabetical';
+			}
+		} else if (key === 'usm-view') {
+			if (value === 'map' || value === 'edit' || value === 'preview') {
+				config.usmView = value;
+			}
+		}
+		// All other attributes are ignored (spec edge case).
+	}
+	return config;
+}
+
+/**
  * Compute the display text of a wikilink: the alias when present
  * (`[[Note|alias]]` → `alias`), otherwise the note name with any
  * heading/block reference stripped.

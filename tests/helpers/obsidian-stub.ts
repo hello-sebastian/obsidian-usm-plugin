@@ -133,6 +133,14 @@ export class TextFileView extends FileView {
 export class MarkdownView extends FileView {
 	private mode: 'source' | 'preview' = 'source';
 
+	/**
+	 * The native source/preview toggle button (mirrors Obsidian's internal
+	 * `modeButtonEl`, created in the real `MarkdownView` constructor via
+	 * `addAction`). Present so the plugin's `setNativeModeToggleVisible`
+	 * helper can be exercised in tests (Defect 4).
+	 */
+	modeButtonEl: HTMLElement = document.createElement('div');
+
 	getMode(): 'source' | 'preview' {
 		return this.mode;
 	}
@@ -145,6 +153,40 @@ export class MarkdownView extends FileView {
 
 /** No-op icon setter (the stub has no icon font). */
 export function setIcon(_el: HTMLElement, _icon: string): void {}
+
+/**
+ * Minimal `Menu` base (test-only). Provides the surface
+ * `showViewSwitchMenu` uses: `addItem`, `load`, `showAtMouseEvent`.
+ * `addItem` invokes the callback with a mock item (whose methods return the
+ * item for chaining) so the menu-building code runs without error. Tests can
+ * spy on `load` / `showAtMouseEvent` to assert the menu is loaded before it
+ * is shown (Defect 2a).
+ */
+export class Menu {
+	addItem(cb: (item: Record<string, unknown>) => unknown): this {
+		const item: Record<string, unknown> = {};
+		for (const method of ['setTitle', 'setIcon', 'setChecked', 'onClick']) {
+			item[method] = () => item;
+		}
+		cb(item);
+		return this;
+	}
+	addSeparator(): this {
+		return this;
+	}
+	load(): void {}
+	showAtMouseEvent(_evt: MouseEvent): this {
+		return this;
+	}
+	showAtPosition(_pos: unknown, _doc?: Document): this {
+		return this;
+	}
+	hide(): this {
+		return this;
+	}
+	close(): void {}
+	onHide(_cb: () => unknown): void {}
+}
 
 /** Placeholder classes for type-only imports that may not be elided. */
 export class App {}

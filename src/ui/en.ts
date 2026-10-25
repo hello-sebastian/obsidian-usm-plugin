@@ -10,8 +10,13 @@ export const en: Record<string, string> = {
 	// "Unassigned" section label (per-level: column group / sub-column / row)
 	'unassigned': 'Unassigned',
 
-	// View display name (native view picker label + tab fallback, FR-027)
+	// View display names (view-switch menu, FR-027)
 	'view.board': 'USM board',
+	'view.edit': 'Edit MD',
+	'view.preview': 'View MD',
+
+	// Dedicated view-switch button tooltip (FR-027, amended)
+	'view.switch': 'Change view',
 
 	// Settings tab (T021)
 	'settings.debug-mode': 'Debug mode',

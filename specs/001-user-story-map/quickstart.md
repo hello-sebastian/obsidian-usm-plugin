@@ -76,20 +76,23 @@ release: "2.0"
 1. Open `board.md` in Obsidian (first open — no `usm-view` attribute yet).
 2. **Expected**: the note opens in the visual map view (not raw Markdown) — the default when `usm-view` is absent (FR-001, FR-026).
 3. Open a non-board note (e.g., `S1.md`). **Expected**: plain Markdown view; the plugin does not interfere.
+4. Close the `board.md` tab and reopen it (same session). **Expected**: it opens in the visual map view again (not raw Markdown) — the first-open routing is robust to the leaf-readiness race (defect 1).
 
-### Q1b — Three-view picker, switching, and `usm-view` persistence (User Story 1, FR-002/FR-026/FR-027, SC-004)
+### Q1b — Three-view menu, switching, and `usm-view` persistence (User Story 1, FR-002/FR-026/FR-027, SC-004)
 
-1. With `board.md` open in the map view, click the pane header **"change view"** button (top-right of the pane) to open Obsidian's native view picker.
-2. **Expected**: the picker shows exactly three options — **"USM board"**, **"Edit MD"**, **"View MD"** — all visible at a glance (FR-027). No other plugin-provided entries appear.
+1. With `board.md` open in the map view, click the pane header **view-switch button** (a distinct icon, not the "…" context-menu button) to open the view-switch menu.
+2. **Expected**: the menu shows exactly three view options — **"USM board"** (checked, the current view), **"Edit MD"**, **"View MD"** — all visible at a glance (FR-027). No other plugin-provided entries appear.
 3. Select **"Edit MD"**. **Expected**: the note switches to Obsidian's standard Markdown editor (the same editor used for any other note); the file content is unchanged (compare before/after — no bytes modified beyond the `usm-view` attribute).
 4. Open `board.md` in a text editor (or inspect the frontmatter). **Expected**: the frontmatter now contains `usm-view: edit` (FR-026). No other frontmatter attribute was added or modified.
-5. Select **"View MD"** via the picker. **Expected**: the note switches to Obsidian's standard Markdown preview; content unchanged. Frontmatter now reads `usm-view: preview`.
-6. Select **"USM board"** via the picker. **Expected**: the note switches back to the visual map; identical map, no content drift. Frontmatter now reads `usm-view: map`.
-7. Close the note and reopen it. **Expected**: it reopens in the visual map view (the last-selected view, `usm-view: map`) (FR-026).
-8. Switch to **"Edit MD"**, close, and reopen. **Expected**: it reopens in the standard Markdown editor (last-selected view restored).
-9. **Multi-pane**: open `board.md` in two panes (e.g., split view). Switch pane A to **"Edit MD"**. **Expected**: pane A shows the editor; pane B is unaffected (still shows its current view). The frontmatter reads `usm-view: edit` (last switch wins). Switch pane B to **"View MD"**. **Expected**: pane B shows the preview; pane A is unaffected. Frontmatter now reads `usm-view: preview`. Close both panes and reopen the note. **Expected**: it reopens in the preview (the last switch won) (FR-026, spec edge case).
-10. **Unrecognized value**: manually set `usm-view: bogus` in the frontmatter, save, and reopen the note. **Expected**: it opens in the visual map view (default fallback) (FR-026, spec edge case).
-11. **No plugin toggle**: verify the pane header shows no plugin-provided toggle icon and the command palette contains no plugin command for switching views (FR-002).
+5. **Button in the Markdown view**: while the note is in the standard Markdown editor, verify the pane header still shows the **view-switch button** (the plugin adds it to the native Markdown view). Click it. **Expected**: the same three-option menu appears, with **"Edit MD"** checked (FR-027, amended).
+6. Select **"View MD"** via the view-switch button. **Expected**: the note switches to Obsidian's standard Markdown preview; content unchanged. Frontmatter now reads `usm-view: preview`.
+7. Select **"USM board"** via the view-switch button. **Expected**: the note switches back to the visual map; identical map, no content drift. Frontmatter now reads `usm-view: map`.
+8. Close the note and reopen it. **Expected**: it reopens in the visual map view (the last-selected view, `usm-view: map`) (FR-026).
+9. Switch to **"Edit MD"**, close, and reopen. **Expected**: it reopens in the standard Markdown editor (last-selected view restored).
+10. **Multi-pane**: open `board.md` in two panes (e.g., split view). Switch pane A to **"Edit MD"**. **Expected**: pane A shows the editor; pane B is unaffected (still shows its current view). The frontmatter reads `usm-view: edit` (last switch wins). Switch pane B to **"View MD"**. **Expected**: pane B shows the preview; pane A is unaffected. Frontmatter now reads `usm-view: preview`. Close both panes and reopen the note. **Expected**: it reopens in the preview (the last switch won) (FR-026, spec edge case).
+11. **Unrecognized value**: manually set `usm-view: bogus` in the frontmatter, save, and reopen the note. **Expected**: it opens in the visual map view (default fallback) (FR-026, spec edge case).
+12. **View-switch button, not a command**: verify the pane header shows the dedicated **view-switch button** (a distinct icon, not "…") in all three view states, and that the command palette contains **no** plugin command for switching views (FR-002, amended). The "…" button remains the native context menu (unchanged).
+13. **Tab label**: verify the tab and breadcrumbs show the note's file name (e.g., "board"), not a constant "USM board" label — the tab stays consistent with the file list (FR-027).
 
 ### Q2 — 2D grid grouping and ordering (User Story 2, FR-005/FR-006, SC-002)
 

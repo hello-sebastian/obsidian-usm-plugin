@@ -27,8 +27,9 @@ export default class UsmPlugin extends Plugin {
 		);
 
 		// Restore and persist the last-selected view for board notes
-		// (T047). No command-palette commands are registered (FR-002):
-		// view switching uses Obsidian's native "change view" picker.
+		// (T047). No command-palette commands are registered (FR-002,
+		// amended): view switching uses the dedicated pane-header
+		// view-switch button (FR-027, amended).
 		registerBoardViewRouting(this);
 
 		// Register the settings tab (T021).

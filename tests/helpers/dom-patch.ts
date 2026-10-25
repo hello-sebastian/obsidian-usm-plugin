@@ -91,4 +91,14 @@ export function patchHTMLElement(): void {
 			this.style.setProperty(k, v);
 		}
 	};
+	// Obsidian augments HTMLElement with hide()/show(); jsdom lacks them.
+	// This mirrors Obsidian's real implementation (which sets style.display),
+	// so the direct assignment is intentional and confined to this test helper.
+	// (tests/ is exempt from no-static-styles-assignment — see eslint.config.mts.)
+	proto.hide = function (this: HTMLElement): void {
+		this.style.display = 'none';
+	};
+	proto.show = function (this: HTMLElement): void {
+		this.style.display = '';
+	};
 }
