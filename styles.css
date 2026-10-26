@@ -347,6 +347,14 @@ light/dark theme adaptation (Principle I) is preserved.
 		--usm-header-h: 24px;
 	}
 
+	/* SC-011: the release header occupies ≤ 32px of vertical space on mobile,
+	freeing horizontal space for the story columns. box-sizing keeps the
+	border-top inside the 32px cap. */
+	.usm-release-header {
+		max-height: 32px;
+		box-sizing: border-box;
+	}
+
 	.usm-story-card {
 		padding: var(--size-4-1);
 	}
