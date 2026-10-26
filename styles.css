@@ -2,9 +2,10 @@
 User Story Map plugin styles.
 
 Uses Obsidian CSS variables for full light/dark theme adaptation
-(Constitution Principle I). Full map styling (grid, sticky headers,
-cards) is completed in T024; this file currently covers the board view
-container and the read-only source view (T010).
+(Constitution Principle I). Covers the board view container, the
+section-based map layout (sticky column-header block + one grid per
+release section, Iteration 2), the story cards, the read-only source
+view, and the debug panel.
 */
 
 /* Board map container: single scroll container (research R-04).
@@ -29,53 +30,110 @@ view so no mutation actions are offered. */
 	margin-bottom: var(--size-4-2);
 }
 
-/* 2D hierarchical grid (T013, sticky headers T017). The grid is dynamic —
-the renderer sets the --usm-grid-cols / --usm-grid-rows custom properties
-(column/row counts depend on the model) and --usm-col / --usm-row per
-element; this stylesheet maps them onto the grid properties (research
-R-04: CSS Grid, no manual geometry). The grid is width: max-content so the
-row headers can stick horizontally; column headers stick to the top, row
-headers to the left, and the corner to both (FR-014, SC-006). When the
-content is wider/taller than the container, the single scroll container
-(.usm-board-map) scrolls on both axes. */
-.usm-board-grid {
-	/* Fixed height of each of the three column-header rows (Activity /
-	Task / Epic). The renderer emits this into --usm-grid-rows and the
-	sticky top offsets below are computed from it (T017). */
-	--usm-header-h: 28px;
-	display: grid;
-	/* width: max-content makes the grid's box as wide as its content so
-	that position: sticky; left: 0 on the row headers is constrained by
-	the full content width (not the container) and can stick while
-	scrolling horizontally (T017, research R-04). */
+/* Section-based layout (Iteration 2, T004). The board is a vertical stack:
+a sticky column-header block followed by one release section per release
+row (research R-17, R-18, R-19, R-22; data-model.md V-01). The renderer
+sets the --usm-grid-cols custom property on every grid (the header block
+and all section grids) and --usm-col / --usm-row per header cell; this
+stylesheet maps them onto the grid properties (research R-04: CSS Grid, no
+manual geometry). The board is width: max-content so the sticky header is
+constrained by the full content width, and the single scroll container
+(.usm-board-map) scrolls on both axes (FR-014, SC-006). */
+
+/* Inner board wrapper: as wide as its content (and at least the container
+width) so the sticky header and the release sections share the same
+horizontal extent (R-18). Also the single source of truth for the fixed
+Epic column width (--usm-col-w), referenced by the shared --usm-grid-cols
+template the renderer emits on every grid (R-18). */
+.usm-board {
+	--usm-col-w: 240px;
 	width: max-content;
-	grid-template-columns: var(--usm-grid-cols);
-	grid-template-rows: var(--usm-grid-rows);
-	gap: var(--size-4-1);
-	align-content: start;
+	min-width: 100%;
 }
 
-/* Grid corner cell (spans the header rows). Pinned on both axes (T017)
-so it stays at the top-left while scrolling in either direction. */
-.usm-grid-corner {
-	grid-column: 1;
-	grid-row: 1 / span 3;
+/* Sticky column-header block (FR-014, SC-006): a CSS Grid with three rows
+(Activity / Task / Epic) that stays pinned to the top while scrolling down.
+The row elements are display: contents, so the header cells are the grid
+items and span their children's columns via --usm-col (FR-005). */
+.usm-board-header {
+	/* Fixed height of each of the three column-header rows (Activity /
+	Task / Epic). */
+	--usm-header-h: 28px;
 	position: sticky;
 	top: 0;
-	left: 0;
-	z-index: 3;
-	background-color: var(--background-secondary);
+	z-index: 2;
+	display: grid;
+	grid-template-columns: var(--usm-grid-cols);
+	grid-template-rows: repeat(3, var(--usm-header-h));
+	gap: var(--size-4-1);
+	/* Opaque background so release content does not show through the grid
+	gaps while scrolling. */
+	background-color: var(--background-primary);
+	padding: var(--size-4-1);
 }
 
-/* Column and row headers. */
-.usm-grid-activity-header,
-.usm-grid-task-header,
-.usm-grid-epic-header,
-.usm-grid-release-header {
+/* Header rows are display: contents so their child cells become the grid
+items of .usm-board-header (the rows exist in the DOM for structure but do
+not create grid tracks). */
+.usm-header-row--activity,
+.usm-header-row--task,
+.usm-header-row--epic {
+	display: contents;
+}
+
+/* Header cells (Activity / Task / Epic). Activity cells span their Task
+children's columns, Task cells span their Epic children's columns, and Epic
+cells are leaf columns (FR-005). Placement is driven by --usm-col /
+--usm-row (set by the renderer); auto-placement packs each row's cells
+left-to-right. */
+.usm-header-cell--activity,
+.usm-header-cell--task,
+.usm-header-cell--epic {
+	grid-column: var(--usm-col);
+	grid-row: var(--usm-row);
 	padding: var(--size-4-1) var(--size-4-2);
 	border: 1px solid var(--background-modifier-border);
 	border-radius: var(--radius-s);
 	background-color: var(--background-secondary);
+	color: var(--text-normal);
+	font-size: var(--font-small);
+	font-weight: var(--font-medium);
+	text-align: center;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+/* Vertical stack of release sections (one per release row). */
+.usm-board-releases {
+	display: flex;
+	flex-direction: column;
+	gap: var(--size-4-2);
+	padding-top: var(--size-4-2);
+}
+
+/* One release section: a horizontal header row plus a grid of Epic leaf
+columns. The release header is NOT sticky (Iteration 2 decision) — only the
+column-header block sticks. */
+.usm-release {
+	display: flex;
+	flex-direction: column;
+	gap: var(--size-4-1);
+}
+
+/* Horizontal release header (US7, US8): a full-width row above the
+section's grid, with a top divider so sections are visually separated. */
+.usm-release-header {
+	display: flex;
+	align-items: center;
+	padding: var(--size-4-1) var(--size-4-2);
+	border-top: 1px solid var(--background-modifier-border);
+	background-color: var(--background-secondary);
+	border-radius: var(--radius-s);
+}
+
+/* Release title (text node; wikilink-capable per FR-007). */
+.usm-release-title {
 	color: var(--text-normal);
 	font-size: var(--font-small);
 	font-weight: var(--font-medium);
@@ -84,45 +142,35 @@ so it stays at the top-left while scrolling in either direction. */
 	text-overflow: ellipsis;
 }
 
-/* Column headers are sticky on the vertical axis (T017): they stay
-visible while scrolling down. Each level is offset by the fixed header
-row height plus the grid gap. */
-.usm-grid-activity-header {
-	grid-column: var(--usm-col);
-	grid-row: var(--usm-row);
-	text-align: center;
-	position: sticky;
-	top: 0;
-	z-index: 2;
+/* Release section body: holds the section's grid. */
+.usm-release-body {
+	display: flex;
+	flex-direction: column;
 }
 
-.usm-grid-task-header {
-	grid-column: var(--usm-col);
-	grid-row: var(--usm-row);
-	text-align: center;
-	position: sticky;
-	top: calc(var(--usm-header-h) + var(--size-4-1));
-	z-index: 2;
+/* One grid per release section. Uses the identical --usm-grid-cols template
+as the header block so columns align across the header and all sections by
+construction (R-18). */
+.usm-release-grid {
+	display: grid;
+	grid-template-columns: var(--usm-grid-cols);
+	gap: var(--size-4-1);
+	align-content: start;
 }
 
-.usm-grid-epic-header {
+/* One Epic leaf column within a release grid; holds the story cards for
+that column in this release (FR-008). */
+.usm-epic-column {
 	grid-column: var(--usm-col);
-	grid-row: var(--usm-row);
-	text-align: center;
-	position: sticky;
-	top: calc(var(--usm-header-h) * 2 + var(--size-4-1) * 2);
-	z-index: 2;
+	display: flex;
+	flex-direction: column;
 }
 
-/* Row headers are sticky on the horizontal axis (T017): they stay
-visible while scrolling right. */
-.usm-grid-release-header {
-	grid-column: var(--usm-col);
-	grid-row: var(--usm-row);
-	text-align: left;
-	position: sticky;
-	left: 0;
-	z-index: 2;
+/* Story cards stacked within an Epic column. */
+.usm-epic-column-cards {
+	display: flex;
+	flex-direction: column;
+	gap: var(--size-4-1);
 }
 
 /* Wikilink attribute header (FR-007): a header value that is a wikilink
@@ -140,20 +188,6 @@ note. Plain-text values keep the inert label styling above. */
 .usm-header-link:focus-visible {
 	outline: 2px solid var(--interactive-accent);
 	outline-offset: -2px;
-}
-
-/* One cell per (Epic column × Release row) intersection; holds the
-story cards for that cell (FR-008). */
-.usm-grid-cell {
-	grid-column: var(--usm-col);
-	grid-row: var(--usm-row);
-	display: flex;
-	flex-direction: column;
-	gap: var(--size-4-1);
-	padding: var(--size-4-1);
-	border: 1px solid var(--background-modifier-border-hover);
-	border-radius: var(--radius-s);
-	min-height: var(--size-4-8);
 }
 
 /* Story card (T015). Interactive card: clamped title, Release badge, and
@@ -283,27 +317,21 @@ map otherwise. Uses Obsidian CSS variables for theme adaptation
 }
 
 /* ---------------------------------------------------------------------------
-Mobile-friendly sizing (T024, Constitution Principle IV).
+Mobile-friendly sizing (Iteration 2, Constitution Principle IV).
 
-The grid geometry is driven by two CSS custom properties that the renderer
-consumes (board-renderer.ts): --usm-rowheader-w (width of the sticky
-row-header column) and --usm-col-min (minimum width of each Epic data
-column). They are declared here with desktop defaults so the stylesheet is
-the single source of truth for sizing; a media query below shrinks them on
-small screens so the map stays usable on phones/tablets (Q10) — fewer
-columns fit per screen, but the single scroll container still scrolls both
-axes and the sticky headers keep working. No hard colors are introduced, so
+The grid geometry is driven by the --usm-col-w custom property (fixed width
+of each Epic leaf column), which the renderer references from the shared
+--usm-grid-cols template (board-renderer.ts). It is declared on the board
+root (.usm-board) with a desktop default so the stylesheet is the single
+source of truth for sizing; a media query below shrinks it on small screens
+so the map stays usable on phones/tablets (Q10) — fewer columns fit per
+screen, but the single scroll container still scrolls both axes and the
+sticky header block keeps working. No hard colors are introduced, so
 light/dark theme adaptation (Principle I) is preserved.
 --------------------------------------------------------------------------- */
-:root {
-	--usm-rowheader-w: 140px;
-	--usm-col-min: 160px;
-}
-
 @media (max-width: 768px) {
-	:root {
-		--usm-rowheader-w: 96px;
-		--usm-col-min: 120px;
+	.usm-board {
+		--usm-col-w: 160px;
 	}
 
 	/* Tighten the map padding and card spacing on small screens so more of
@@ -312,11 +340,10 @@ light/dark theme adaptation (Principle I) is preserved.
 		padding: var(--size-4-2);
 	}
 
-	.usm-board-grid {
+	.usm-board-header {
 		gap: var(--size-4-1);
 		/* Shrink the fixed column-header row height so the three header rows
-		take less vertical space; the sticky top offsets in the header rules
-		reference --usm-header-h, so they follow automatically. */
+		take less vertical space. */
 		--usm-header-h: 24px;
 	}
 
