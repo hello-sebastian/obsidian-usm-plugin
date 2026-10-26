@@ -56,22 +56,22 @@ Fixture: `projects/Story Map Builder/Test Board 2/` (Board.md + S1–S8, incl.
 the long epic title in S6 for the Q13 clamp check). Deploy with
 `npm run deploy` before running these scenarios.
 
-- [ ] **Q11** — The sticky column-header block (Activity / Task / Epic rows)
+- [x] **Q11** — The sticky column-header block (Activity / Task / Epic rows)
       stays pinned at the top while scrolling; release headers are NOT sticky
       (they scroll away); horizontal scrolling keeps the header block visible
       and aligned with the columns. (T007, FR-029/FR-030)
-- [ ] **Q12** — The Unassigned section renders first, at the top of the board,
+- [x] **Q12** — The Unassigned section renders first, at the top of the board,
       before any release section. (T008, FR-031)
-- [ ] **Q13** — Columns are perfectly aligned across the header block and
+- [x] **Q13** — Columns are perfectly aligned across the header block and
       every release section (identical fixed column width); long titles (e.g.
       the S6 epic) clamp within the fixed column width. (T008, FR-032, SC-012)
-- [ ] **Q14** — On a mobile device (~375 px portrait): the release header
+- [x] **Q14** — On a mobile device (~375 px portrait): the release header
       occupies ≤ 32 px of vertical space, columns get the full width, the map
       scrolls both axes, and there is no sticky left column. (T007, SC-011)
 
 ## Result
 
-- [ ] All Q1–Q10 scenarios pass → mark **T025** `[X]` in `tasks.md`.
-- [ ] All Q11–Q14 scenarios pass → mark **T007** and **T008** `[X]` in
+- [x] All Q1–Q10 scenarios pass → mark **T025** `[X]` in `tasks.md`.
+- [x] All Q11–Q14 scenarios pass → mark **T007** and **T008** `[X]` in
       `tasks.md`.
 - [ ] Any failure → record it here, fix, and re-run the affected scenario.
