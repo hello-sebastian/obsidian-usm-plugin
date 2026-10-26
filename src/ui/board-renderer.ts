@@ -1,55 +1,48 @@
 /**
- * Map renderer (T011, extended by T013, T014, T016, T017).
+ * Map renderer (Iteration 2 — section-based layout, T003).
  *
- * Renders a {@link GridModel} into the board view's map container: a
- * single scroll container (`overflow: auto` on both axes) holding a CSS
- * Grid (research R-04, FR-008).
+ * Renders a {@link GridModel} into the board view's map container
+ * (`.usm-board-map`, `overflow: auto` on both axes) as a section-based
+ * layout (research R-17, R-18, R-19, R-22; data-model.md V-01):
  *
- * T013 provides the full 2D hierarchical grid:
- * - nested column headers — Activity (spanning its Task sub-columns),
- *   Task (spanning its Epic columns), Epic (one column each) — in
- *   first-appearance order (FR-005);
- * - one row per Release, ordered per `releaseRowOrder` (FR-006);
- * - each story card placed in the cell at the intersection of its Epic
- *   column and Release row, resolved via the `GridModel.cells` keys
- *   (FR-008, SC-002).
+ * - a sticky column-header block (`.usm-board-header`) — a CSS Grid with
+ *   three rows (Activity / Task / Epic). The row elements
+ *   (`.usm-header-row--*`) are `display: contents` (styles.css), so the
+ *   header cells are the grid items: Activity cells span their Task
+ *   children's columns, Task cells span their Epic children's columns,
+ *   Epic cells are leaf columns (FR-005);
+ * - a vertical stack (`.usm-board-releases`) of release sections — one
+ *   `section.usm-release` per release row, with the UNASSIGNED release row
+ *   rendered FIRST (R-22). Each section has a horizontal
+ *   `.usm-release-header` (release title, wikilink-capable per FR-007) and
+ *   a `.usm-release-body > .usm-release-grid` holding one
+ *   `.usm-epic-column > .usm-epic-column-cards` per Epic leaf column
+ *   (FR-008, SC-002);
+ * - every grid (the header block and all section grids) carries the
+ *   identical inline `--usm-grid-cols` custom property
+ *   (`repeat(N, var(--usm-col-w))`, N = number of Epic leaf columns), so
+ *   columns align across the header and all sections by construction —
+ *   no JS geometry (R-18).
  *
- * T014 renders attribute headers with wikilink support: a wikilink value
- * makes the header a clickable, keyboard-accessible link that opens the
- * linked note; a plain-text value renders as an inert visual label (FR-007).
+ * The previous single-grid layout (one `.usm-board-grid` with a sticky
+ * left release column) is removed: the release header is no longer a
+ * sticky column but a horizontal section header (US7, US8).
  *
- * T016 replaces the base card with the full story card from
- * `story-card.ts` (T015): clamped title, Release badge, click-to-open,
- * keyboard access (FR-009, FR-010, FR-019).
- *
- * T017 adds sticky headers and 2D scrolling: the single scroll container
- * (`.usm-board-map`, `overflow: auto`) scrolls on both axes while the
- * column headers stay pinned to the top, the row headers to the left, and
- * the corner cell to both (FR-014, SC-006; research R-04). The grid is
- * `width: max-content` (styles.css) so the row headers can stick
- * horizontally, and the three column-header rows have a fixed height so
- * the sticky offsets are known.
- *
- * T018 renders "Unassigned" sections and broken-link placeholders
- * (FR-011, SC-003; research R-11):
- * - headers whose label is the UNASSIGNED sentinel get the
- *   `usm-header-unassigned` class (dashed border, muted text) so the
- *   dedicated "Unassigned" column group / sub-column / row is visually
- *   distinct from assigned headers;
- * - `isBroken` entries render as dimmed, inert placeholder cards showing
- *   the link text plus a "Missing note" hint (see `story-card.ts`);
- * - no errors are thrown and no intrusive notifications are shown —
- *   incomplete data degrades gracefully.
- *
- * T020 enforces read-only behavior (FR-015, FR-017, SC-004): the renderer
- * emits no editing affordances — no drag handles, no inline-edit inputs,
- * no context-menu mutations. The only interactive elements are the
- * navigation affordances (clickable wikilink headers and story cards that
- * open their note in the standard view). The map is a read-only projection
- * of the Markdown source; all editing happens in the standard editor.
- *
- * All note-derived strings are inserted as text nodes (FR-016) — never
- * via `innerHTML` — so note content can never execute as markup.
+ * Preserved from the MVP:
+ * - text-node insertion for all note-derived strings (FR-016) — never
+ *   via `innerHTML`, so note content can never execute as markup;
+ * - wikilink header clickability (FR-007): a wikilink value makes the
+ *   header a clickable, keyboard-accessible link that opens the linked
+ *   note; a plain-text value renders as an inert visual label;
+ * - "Unassigned" headers (FR-011): the UNASSIGNED sentinel gets the
+ *   `usm-header-unassigned` class (dashed border, muted text) and renders
+ *   as the i18n "Unassigned" label;
+ * - broken-link placeholder cards (R-11) and story-card click-to-open
+ *   (FR-019) via `story-card.ts`;
+ * - read-only behavior (FR-015, FR-017): the renderer emits no editing
+ *   affordances — the only interactive elements are the navigation
+ *   affordances (clickable wikilink headers and story cards that open
+ *   their note in the standard view).
  */
 import type { GridModel, StoryEntry } from '../domain/types';
 import { UNASSIGNED, cellKey, normalizeKey } from '../domain/types';
@@ -66,24 +59,18 @@ interface EpicColumn {
 	epicKey: string;
 }
 
-/** 1-based CSS grid row of the first Release row (after 3 header rows). */
-const FIRST_RELEASE_ROW = 4;
-
 /** The four header levels that can carry a wikilink value (FR-007). */
 type HeaderLevel = 'activity' | 'task' | 'epic' | 'release';
 
 /**
- * Renders a {@link GridModel} into a scroll container as a CSS Grid of
- * story cards.
+ * Renders a {@link GridModel} into a scroll container as a section-based
+ * layout (sticky column-header block + one grid per release section).
  */
 export class BoardRenderer {
 	private readonly containerEl: HTMLElement;
 
 	/** Opens a note by its resolved path (provided by the view, FR-007). */
 	private readonly openLink: (linkPath: string) => void;
-
-	/** The current grid element (recreated on each render). */
-	private gridEl: HTMLElement | null = null;
 
 	/**
 	 * @param containerEl The map scroll container (`.usm-board-map`),
@@ -107,103 +94,112 @@ export class BoardRenderer {
 	 */
 	render(model: GridModel): void {
 		this.containerEl.empty();
-		const grid = this.containerEl.createDiv({ cls: 'usm-board-grid' });
-		this.gridEl = grid;
 		if (model.activities.length === 0 || model.releases.length === 0) {
 			return;
 		}
-		this.renderGrid(model, grid);
+		const board = this.containerEl.createDiv({ cls: 'usm-board' });
+		const epicColumns = this.flattenEpicColumns(model);
+		// The shared grid template (R-18): every grid (the header block and
+		// all section grids) uses the identical column template so columns
+		// align across the header and all sections by construction. The
+		// fixed column width (--usm-col-w) is defined in styles.css so a
+		// mobile media query can shrink it for small screens without
+		// changing this geometry logic.
+		const gridCols = `repeat(${epicColumns.length}, var(--usm-col-w))`;
+		this.renderHeaderBlock(board, model, gridCols);
+		this.renderReleaseSections(board, model, epicColumns, gridCols);
 	}
 
 	/**
-	 * Build the 2D grid: three header rows (Activity / Task / Epic), a
-	 * row-header column, one column per Epic, and one row per Release.
-	 *
-	 * The grid is dynamic (column/row counts depend on the model), so the
-	 * layout is driven by CSS custom properties set per element
-	 * (`--usm-col` / `--usm-row` / `--usm-grid-cols` / `--usm-grid-rows`);
-	 * the stylesheet in `styles.css` maps them onto the grid properties
-	 * (research R-04: CSS Grid, no manual geometry).
+	 * Build the sticky column-header block: a CSS Grid with three rows
+	 * (Activity / Task / Epic). The row elements are `display: contents`
+	 * (styles.css), so the header cells are the grid items and span their
+	 * children's columns via `--usm-col` (FR-005).
 	 */
-	private renderGrid(model: GridModel, grid: HTMLElement): void {
-		const epicColumns = this.flattenEpicColumns(model);
-		grid.setCssProps({
-			// Data columns size to their content (min --usm-col-min, default
-			// 160px) so a single long title does not inflate every column
-			// (T017). The row-header column uses --usm-rowheader-w (default
-			// 140px). Both are CSS custom properties defined in styles.css so
-			// a mobile media query can shrink them for small screens (T024)
-			// without changing this geometry logic. The grid itself is
-			// width: max-content (styles.css), which is what lets the row
-			// headers stick horizontally.
-			'--usm-grid-cols': `minmax(var(--usm-rowheader-w, 140px), auto) repeat(${epicColumns.length}, minmax(var(--usm-col-min, 160px), max-content))`,
-			// The three column-header rows have a fixed height
-			// (--usm-header-h, styles.css) so the sticky top offsets are
-			// known; release rows size to their content (T017).
-			'--usm-grid-rows': `repeat(3, var(--usm-header-h)) repeat(${model.releases.length}, auto)`,
+	private renderHeaderBlock(
+		board: HTMLElement,
+		model: GridModel,
+		gridCols: string,
+	): void {
+		const header = board.createDiv({ cls: 'usm-board-header' });
+		header.setCssProps({ '--usm-grid-cols': gridCols });
+
+		// Row 1: Activity cells span their Task children's Epic columns.
+		const activityRow = header.createDiv({
+			cls: 'usm-header-row--activity',
 		});
-
-		// Corner cell spanning the three header rows (T017 pins it).
-		grid.createDiv({ cls: 'usm-grid-corner' });
-
-		// Column headers: Activity → Task → Epic (FR-005).
-		let column = 2;
 		for (const activity of model.activities) {
-			const activitySpan = activity.tasks.reduce(
+			const span = activity.tasks.reduce(
 				(sum, task) => sum + task.epics.length,
 				0,
 			);
-			const activityHeader = grid.createDiv({
-				cls: 'usm-grid-activity-header',
+			const cell = activityRow.createDiv({
+				cls: 'usm-header-cell--activity',
 			});
-			activityHeader.setCssProps({
-				'--usm-col': `${column} / span ${activitySpan}`,
-				'--usm-row': '1',
-			});
-			this.renderHeader(activityHeader, 'activity', activity.activity, model);
+			cell.setCssProps({ '--usm-col': `span ${span}`, '--usm-row': '1' });
+			this.renderHeaderContent(cell, 'activity', activity.activity, model);
+		}
 
+		// Row 2: Task cells span their Epic children's columns.
+		const taskRow = header.createDiv({ cls: 'usm-header-row--task' });
+		for (const activity of model.activities) {
 			for (const task of activity.tasks) {
-				const taskHeader = grid.createDiv({ cls: 'usm-grid-task-header' });
-				taskHeader.setCssProps({
-					'--usm-col': `${column} / span ${task.epics.length}`,
+				const cell = taskRow.createDiv({ cls: 'usm-header-cell--task' });
+				cell.setCssProps({
+					'--usm-col': `span ${task.epics.length}`,
 					'--usm-row': '2',
 				});
-				this.renderHeader(taskHeader, 'task', task.task, model);
-
-				for (const epic of task.epics) {
-					const epicHeader = grid.createDiv({
-						cls: 'usm-grid-epic-header',
-					});
-					epicHeader.setCssProps({
-						'--usm-col': `${column}`,
-						'--usm-row': '3',
-					});
-					this.renderHeader(epicHeader, 'epic', epic, model);
-					column += 1;
-				}
+				this.renderHeaderContent(cell, 'task', task.task, model);
 			}
 		}
 
-		// Release row headers + cells (FR-006, FR-008).
-		model.releases.forEach((releaseLabel, rowIndex) => {
+		// Row 3: Epic cells are leaf columns (one column each).
+		const epicRow = header.createDiv({ cls: 'usm-header-row--epic' });
+		for (const activity of model.activities) {
+			for (const task of activity.tasks) {
+				for (const epic of task.epics) {
+					const cell = epicRow.createDiv({ cls: 'usm-header-cell--epic' });
+					cell.setCssProps({ '--usm-col': 'span 1', '--usm-row': '3' });
+					this.renderHeaderContent(cell, 'epic', epic, model);
+				}
+			}
+		}
+	}
+
+	/**
+	 * Build the vertical stack of release sections (one per release row).
+	 * The UNASSIGNED release row is rendered FIRST (R-22); the remaining
+	 * rows keep their `GridModel` order (FR-006). Each section has a
+	 * horizontal header and a grid of Epic leaf columns; a release row
+	 * with no stories renders an empty grid without an error (defensive
+	 * guarantee — the current domain model derives release rows from
+	 * stories, so this is reachable only via a synthetic model).
+	 */
+	private renderReleaseSections(
+		board: HTMLElement,
+		model: GridModel,
+		epicColumns: EpicColumn[],
+		gridCols: string,
+	): void {
+		const releases = board.createDiv({ cls: 'usm-board-releases' });
+		const orderedReleases = [
+			...model.releases.filter((label) => label === UNASSIGNED),
+			...model.releases.filter((label) => label !== UNASSIGNED),
+		];
+
+		for (const releaseLabel of orderedReleases) {
+			const section = releases.createEl('section', { cls: 'usm-release' });
+			this.renderReleaseHeader(section, releaseLabel, model);
+
+			const body = section.createDiv({ cls: 'usm-release-body' });
+			const grid = body.createDiv({ cls: 'usm-release-grid' });
+			grid.setCssProps({ '--usm-grid-cols': gridCols });
+
 			const releaseKey = normalizeKey(releaseLabel);
-			const row = FIRST_RELEASE_ROW + rowIndex;
-
-			const releaseHeader = grid.createDiv({
-				cls: 'usm-grid-release-header',
-			});
-			releaseHeader.setCssProps({
-				'--usm-col': '1',
-				'--usm-row': `${row}`,
-			});
-			this.renderHeader(releaseHeader, 'release', releaseLabel, model);
-
 			epicColumns.forEach((epicColumn, columnIndex) => {
-				const cell = grid.createDiv({ cls: 'usm-grid-cell' });
-				cell.setCssProps({
-					'--usm-col': `${columnIndex + 2}`,
-					'--usm-row': `${row}`,
-				});
+				const column = grid.createDiv({ cls: 'usm-epic-column' });
+				column.setCssProps({ '--usm-col': `${columnIndex + 1}` });
+				const cards = column.createDiv({ cls: 'usm-epic-column-cards' });
 				const key = cellKey(
 					epicColumn.activityKey,
 					epicColumn.taskKey,
@@ -213,11 +209,25 @@ export class BoardRenderer {
 				const entries = model.cells.get(key);
 				if (entries !== undefined) {
 					for (const entry of entries) {
-						this.renderCard(cell, entry);
+						this.renderCard(cards, entry);
 					}
 				}
 			});
-		});
+		}
+	}
+
+	/**
+	 * Build a release section's horizontal header: the release title
+	 * (text node, sanitized; wikilink-capable per FR-007).
+	 */
+	private renderReleaseHeader(
+		section: HTMLElement,
+		releaseLabel: string,
+		model: GridModel,
+	): void {
+		const header = section.createDiv({ cls: 'usm-release-header' });
+		const title = header.createDiv({ cls: 'usm-release-title' });
+		this.renderHeaderContent(title, 'release', releaseLabel, model);
 	}
 
 	/**
@@ -255,16 +265,17 @@ export class BoardRenderer {
 	}
 
 	/**
-	 * Fill a header cell with its content (FR-007). When the value is a
+	 * Fill a header element with its content (FR-007). When the value is a
 	 * wikilink (a link path is recorded in `model.headerLinks`), the header
 	 * becomes a clickable, keyboard-accessible link that opens the linked
 	 * note. Otherwise it renders as an inert visual label.
 	 *
-	 * The header element is the grid item (its `--usm-col` / `--usm-row`
-	 * placement is already set by the caller); this only fills its content
-	 * and, for wikilinks, wires up the interaction.
+	 * Used for the column-header cells (Activity / Task / Epic) and the
+	 * release section titles. The element's grid placement (if any) is set
+	 * by the caller; this only fills the content and, for wikilinks, wires
+	 * up the interaction.
 	 */
-	private renderHeader(
+	private renderHeaderContent(
 		headerEl: HTMLElement,
 		level: HeaderLevel,
 		label: string,
