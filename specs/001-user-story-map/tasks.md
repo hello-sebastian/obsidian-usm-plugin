@@ -91,7 +91,8 @@ description: "Task list for User Story Map Board View — Iteration 2 (Visual La
 
 > The US8 implementation (section DOM, shared template, Unassigned-first) was delivered in Phase 2; this phase verifies the US8 acceptance scenarios end-to-end.
 
-- [ ] T008 [US8] Verify all US8 acceptance scenarios: automated — the structural tests in `tests/integration/section-layout.test.ts` (one section per release, identical grid template across all grids ⇒ aligned columns, Unassigned section first, empty release renders an empty grid) pass; manual — quickstart Q12 (Unassigned section first, top of board) and Q13 (columns perfectly aligned across the header block and every section; long titles clamp within the fixed column width)
+- [X] T008 [US8] Verify all US8 acceptance scenarios: automated — the structural tests in `tests/integration/section-layout.test.ts` (one section per release, identical grid template across all grids ⇒ aligned columns, Unassigned section first, empty release renders an empty grid) pass; manual — quickstart Q12 (Unassigned section first, top of board) and Q13 (columns perfectly aligned across the header block and every section; long titles clamp within the fixed column width)
+  - **Verified (2026-10-27)**: Automated — `tests/integration/section-layout.test.ts` 7/7 (one section per release, identical `--usm-grid-cols` template across all grids ⇒ aligned columns, Unassigned section first, empty release renders an empty grid); full suite 154/154. Manual — user pass on the deployed build against the `Test Board 2` fixture: Q12 (Unassigned section first, top of board) and Q13 (columns perfectly aligned across the header block and every section; the long S6 epic title clamps within the fixed column width) both pass. Recorded in `checklists/manual-validation.md` (Q11–Q14 section, all checked).
 
 **Checkpoint**: US7 AND US8 complete — the core Iteration 2 layout (MVP scope) is functional and independently testable
 
