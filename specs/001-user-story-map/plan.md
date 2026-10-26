@@ -1,32 +1,32 @@
-# Implementation Plan: User Story Map Board View
+# Implementation Plan: User Story Map Board View — Iteration 2 (Visual Layer Refactor)
 
-**Branch**: `001-user-story-map` | **Date**: 2026-10-15 (updated 2026-10-23) | **Spec**: [spec.md](spec.md)
+**Branch**: `001-user-story-map` | **Date**: 2026-10-26 | **Spec**: [spec.md](spec.md)
 
-**Input**: Feature specification from `/specs/001-user-story-map/spec.md`
+**Input**: Feature specification from `/specs/001-user-story-map/spec.md` (Iteration 2 section). The MVP (Iteration 1) plan and tasks are archived as [plan-mvp.md](plan-mvp.md) and [tasks-mvp.md](tasks-mvp.md).
 
 ## Summary
 
-The plugin renders a board note (flagged with `usm-board: true`) as a 2D visual user story map: columns grouped by Activity → Task → Epic (order of first appearance in the board file), rows by Release. Each story appears as a card with a cascading title and a Release badge. The map is read-only and auto-updates on file changes via `metadataCache` events. The plugin registers a single custom `FileView` ("USM board") that renders only the visual map — no plugin-provided text display (FR-025) and no plugin-provided toggle icon or command (FR-002). View switching uses Obsidian's native "change view" picker, which presents exactly three options for a board note: "USM board", "Edit MD", "View MD" (FR-027). The last-selected view is persisted as the `usm-view` frontmatter attribute (`map` / `edit` / `preview`, default `map`) and restored when the note is reopened (FR-026). Board-level configuration (e.g., row sort order, `usm-view`) lives in the board file frontmatter for portability (FR-028). A debug/dev mode exposes rendering metrics (fps, story count).
+Iteration 2 refactors the **visual layer only** of the board: the release header stops being a sticky left column and becomes a horizontal row (section header); releases render as vertically stacked, self-contained sections; the column header block (Activity/Task/Epic, three rows) stays sticky at the top; all grids (header block + one grid per release section) share a fixed column width (`--usm-col-w`) so columns are perfectly aligned; the board renders in both light and dark themes via Obsidian CSS variables; and the DOM is prepared for future features (release toggle, DnD handles, add/remove buttons) without implementing them. The domain model (`GridModel`, `buildGridModel`), the file formats, and the story ordering are **unchanged** — FR-011/FR-014/FR-016/FR-019 MUST continue to pass (SC-015). The authoritative source of decisions is [refactor-concept.md](refactor-concept.md) (section 9: resolved decisions).
 
 ## Technical Context
 
 **Language/Version**: TypeScript 5.8+ (strict mode, no `any`)
 
-**Primary Dependencies**: Obsidian API (`obsidian` package, latest), esbuild (bundler only — no runtime deps). Dev-only (test) dependencies: Vitest (test runner) and jsdom (DOM environment for the performance tests) — zero impact on the bundled `main.js` (constitution dependency-minimization applies to runtime dependencies)
+**Primary Dependencies**: Obsidian API (`obsidian` package, latest), esbuild (bundler only — no runtime deps). Dev-only (test) dependencies: Vitest (test runner) and jsdom (DOM environment) — zero impact on the bundled `main.js`
 
-**Storage**: All data lives in Markdown files within the vault; read exclusively via `app.metadataCache` (no synchronous disk I/O). The single sanctioned write: the plugin updates the `usm-view` frontmatter attribute on view switch via `vault.process()` (atomic read-modify-write; FR-026). No plugin-owned storage for board state — only plugin-internal settings (e.g., debug mode) live in `data.json` (FR-028)
+**Storage**: All data lives in Markdown files within the vault; read exclusively via `app.metadataCache` (no synchronous disk I/O). No new persisted state in this iteration — the only board-file write remains the `usm-view` frontmatter attribute (FR-026, unchanged)
 
-**Testing**: Automated unit + integration tests (Vitest) for the core logic (parser, attributes, grid model, sanitization); versioned test fixtures for reproducible runs; automated performance tests measuring render smoothness on a defined board size; manual acceptance testing in Obsidian (Desktop + Mobile) against a test vault for user-facing behavior (three-view picker, view switching + `usm-view` persistence, 2D navigation, live updates, mobile). Automated performance tests measure model build time and DOM render time (jsdom) on a defined board size; the debug/dev mode provides fps metrics for manual verification on real devices (quickstart Q7) (FR-022, FR-023, FR-024, SC-009, SC-010).
+**Testing**: Automated unit + integration tests (Vitest) for the core logic (unchanged, MUST keep passing — SC-015); new structural DOM tests (jsdom) verifying the section-based layout guarantees (same grid template across all grids, reserved elements present/inactive, Unassigned section first); automated performance tests against the existing baseline (no >20% regression — SC-014); manual acceptance testing in Obsidian (Desktop + Mobile) for pixel-level behavior jsdom cannot verify (mobile header height, column alignment, themes — SC-011, SC-012, SC-013)
 
 **Target Platform**: Obsidian Desktop (macOS, Windows, Linux) + Mobile (iOS, Android). No Node.js/Electron APIs.
 
 **Project Type**: Obsidian Community Plugin (browser-based, single bundled `main.js`)
 
-**Performance Goals**: Smooth rendering on weak mobile devices (tablet/phone); no hard scale limit; debug/dev mode exposes fps and story count; target: map updates within 2s of source edit (SC-005)
+**Performance Goals**: No performance regression >20% vs the MVP baseline (SC-014, measured by the existing automated performance tests on the same board size); on mobile (~375 px) the release header occupies ≤ 32 px of vertical space (SC-011)
 
-**Constraints**: 100% local (no network calls); no `eval`/`Function`; XSS sanitization on all note-derived content; no Node/Electron APIs; all DOM/event/interval registrations via `register*` helpers; CSS Grid/Flexbox for layout (no manual geometry)
+**Constraints**: 100% local (no network calls); no `eval`/`Function`; XSS sanitization on all note-derived content (text-node insertion, unchanged); no Node/Electron APIs; no inline JS visual styling — all styling in `styles.css` with Obsidian CSS variables (structural geometry via `--usm-*` custom properties only, per constitution v1.6.1 clarification); CSS Grid/Flexbox for layout (no manual geometry in JS); fixed column width is a design decision, not a user setting
 
-**Scale/Scope**: No hard limit on story count; must remain usable on mobile; single vault (no cross-vault references); read-only map (no drag-and-drop, no inline editing); the only board-file mutation is the `usm-view` attribute (FR-026)
+**Scale/Scope**: No hard limit on story count; must remain usable on mobile; single vault; read-only map (no DnD, no CRUD, no keyboard-grid navigation in this iteration — reserved DOM only); the refactor touches the visual layer (`src/ui/board-renderer.ts`, `src/ui/story-card.ts`, `styles.css`) and the test suite — the domain layer is untouched
 
 ## Constitution Check
 
@@ -34,21 +34,17 @@ The plugin renders a board note (flagged with `usm-board: true`) as a 2D visual 
 
 | Principle | Status | Notes |
 |-----------|--------|-------|
-| I. Obsidian ecosystem & view architecture | ✅ PASS | Single `FileView` subclass registered via `plugin.registerView`; view switching via Obsidian's native "change view" picker (three views: USM board / Edit MD / View MD); Obsidian API components; CSS variables; no Node/Electron APIs |
-| II. Security, privacy & data protection | ✅ PASS | 100% local; no eval/Function; XSS sanitization on all rendered content; single sanctioned file write — `usm-view` frontmatter attribute via `vault.process()` (FR-026); all other access read-only |
-| III. Lifecycle, cleanup & code quality | ✅ PASS | TypeScript strict; `register*` helpers for all listeners; esbuild bundle; English comments; semantic naming; logical module division |
-| IV. UX/UI, ergonomics & incomplete data | ✅ PASS | Obsidian CSS variables; defensive "Unassigned" bucketing; 2D scroll with sticky headers; keyboard-accessible cards; non-intrusive error handling |
-| V. Performance, reactivity & large vaults | ✅ PASS | `metadataCache` only (no sync disk reads); event-driven with debounce; CSS Grid/Flexbox layout |
-| VI. Data portability & self-describing config | ✅ PASS | Board config in board file frontmatter; self-describing; survives sync/copy/reinstall; readable without plugin |
-| VII. Pragmatic architecture & anti-over-engineering | ✅ PASS | Strict 3-layer `src/domain/` / `src/obsidian/` / `src/ui/` structure; pure functions in `domain/` (zero Obsidian imports); no inline visual styling (geometry via `--usm-*` custom properties only, per v1.6.1 clarification); popout-window compatible (no global `document`); three-tier state allocation |
+| I. Obsidian ecosystem & view architecture | ✅ PASS | View architecture unchanged (single map-only `FileView`, three-view switching); the refactor is confined to the map's internal DOM/CSS; Obsidian CSS variables for theming; no Node/Electron APIs |
+| II. Security, privacy & data protection | ✅ PASS | 100% local; no eval/Function; all note-derived strings still inserted as text nodes (FR-016 unchanged); no new file writes (the only sanctioned write remains `usm-view`, FR-026); reserved DOM elements are static and inert |
+| III. Lifecycle, cleanup & code quality | ✅ PASS | TypeScript strict; no new listeners/intervals introduced by the refactor (event wiring unchanged); renderer stays a pure DOM module (no `obsidian` imports); new renderer logic follows TDD (structural DOM tests written first) |
+| IV. UX/UI, ergonomics & incomplete data | ✅ PASS | Obsidian CSS variables only (no hard-coded colors — FR-033); mobile: release header ≤ 32 px (SC-011); defensive "Unassigned" grouping preserved (FR-011) — the Unassigned release section renders first (top of board); reserved elements are inert and do not interfere with existing keyboard access |
+| V. Performance, reactivity & large vaults | ✅ PASS | `metadataCache` only; event-driven debounced updates unchanged; CSS Grid + `overflow: auto` layout with no manual geometry (R-17, R-18); multiple grids are more scalable than a single grid (per-section lazy rendering becomes possible later); performance regression guard (SC-014) |
+| VI. Data portability & self-describing config | ✅ PASS | Board file format and frontmatter unchanged (contracts untouched); no new board-level state; the refactor is purely visual |
+| VII. Pragmatic architecture & anti-over-engineering | ✅ PASS | Strict 3-layer structure preserved — all changes in `src/ui/` + `styles.css`; no inline JS visual styling (geometry via `--usm-*` custom properties only, per v1.6.1 clarification); no new dependencies; popout-window compatibility preserved (container's `ownerDocument`) |
 
 **Gate result: PASS — no violations. No Complexity Tracking entries required.**
 
-**Post-design re-check (after Phase 1): PASS.** The design artifacts confirm compliance: `metadataCache`-only data access (R-02), event-driven debounced updates (R-03), CSS Grid + sticky headers with no manual geometry (R-04), text-node DOM insertion for XSS safety with zero added runtime dependencies (R-05), board config in board file frontmatter (R-08, contracts), English `en` label dictionary as i18n foundation (R-09), debug metrics gated behind a setting with proper cleanup (R-07), and a Vitest-based automated test suite with versioned fixtures covering the core logic, integration pipeline, and performance (R-13). No new violations introduced.
-
-**Post-amendment re-check (2026-10-23, FR-025–FR-028): PASS.** The view architecture was reworked from a dual-mode `TextFileView` (plugin-provided text display + pane header toggle icon + command) to a native view-picker architecture: a single map-only `FileView` registered via `plugin.registerView` (R-01, R-14), `usm-view` persistence in board frontmatter via `vault.process()` (R-15), and event-driven view-switch detection via `workspace.on('file-open')` + `MarkdownView.getMode()` (R-16). Principle I is strengthened (the plugin now contributes exactly one native picker entry and reuses Obsidian's Markdown view for both text modes); Principle II gains one sanctioned, atomic, no-op-skipping frontmatter write; Principle VI is extended (board-level state — including last-selected view — lives in the board file). No new violations introduced.
-
-**Post-amendment re-check (constitution v1.6.0 → v1.6.1): PASS.** After the constitution was amended to add Principle VII (Pragmatic Architecture & Anti-Over-Engineering), the implementation was re-analyzed and brought into compliance: (1) the source tree was restructured into the strict 3-layer layout `src/domain/` (pure functions, zero Obsidian imports) / `src/obsidian/` (API adapters: plugin lifecycle, settings, view, parser, attributes) / `src/ui/` (DOM rendering, cards, debug panel, label dictionary); (2) the "No Inline JS Styling" rule was clarified in a PATCH amendment (v1.6.1) — setting `--usm-*` CSS custom properties to encode structural grid geometry is permitted, while all visual styling remains exclusively in `styles.css` with Obsidian CSS variables; (3) a regression test (`tests/unit/inline-styling-guard.test.ts`) now statically enforces the rule across all `src/**/*.ts` files. No new violations introduced.
+**Post-design re-check (after Phase 1): PASS.** The design artifacts confirm compliance: the domain model and file formats are unchanged (data-model.md V-01, contracts untouched); the multiple-grids architecture uses one scroll container + CSS Grid with a shared fixed-width column template and no JS geometry (R-17, R-18); sticky behavior is pure CSS (R-19); theming uses L2 Obsidian variables + `color-mix()` with a static guard test (R-20, R-24); reserved DOM elements are structurally present but inert (R-21); the Unassigned release section renders first with zero domain changes (R-22); layout verification splits structural (automated) from pixel-level (manual) guarantees (R-23); the existing performance baseline and regression guard are reused (SC-014). No new violations introduced.
 
 ## Project Structure
 
@@ -56,13 +52,16 @@ The plugin renders a board note (flagged with `usm-board: true`) as a 2D visual 
 
 ```text
 specs/001-user-story-map/
-├── plan.md              # This file (/speckit-plan command output)
-├── research.md          # Phase 0 output (/speckit-plan command)
-├── data-model.md        # Phase 1 output (/speckit-plan command)
-├── quickstart.md        # Phase 1 output (/speckit-plan command)
-├── contracts/           # Phase 1 output (/speckit-plan command)
+├── plan.md              # This file (/speckit-plan command output — Iteration 2)
+├── plan-mvp.md          # Archived MVP plan (Iteration 1)
+├── tasks-mvp.md         # Archived MVP tasks (Iteration 1)
+├── research.md          # Phase 0 output (MVP R-01–R-16 + Iteration 2 R-17–R-24)
+├── data-model.md        # Phase 1 output (domain model unchanged + visual-layer structure)
+├── quickstart.md        # Phase 1 output (MVP scenarios + Iteration 2 scenarios)
+├── contracts/           # Phase 1 output (UNCHANGED in Iteration 2)
 │   ├── board-file-format.md
 │   └── story-file-format.md
+├── refactor-concept.md  # Authoritative source of Iteration 2 decisions
 └── tasks.md             # Phase 2 output (/speckit-tasks command - NOT created by /speckit-plan)
 ```
 
@@ -70,41 +69,36 @@ specs/001-user-story-map/
 
 ```text
 src/
-├── domain/                  # Pure logic — zero Obsidian imports (Constitution Principle VII)
-│   ├── types.ts             # Shared TypeScript interfaces (BoardConfig, StoryAttributes, GridModel, etc.)
-│   ├── board-model.ts       # Builds in-memory grid model (columns: Activity→Task→Epic, rows: Release)
-│   ├── sanitize.ts          # XSS sanitization: strips HTML/script from note-derived strings
-│   └── debounce.ts          # Debounce/throttle utility for event-driven updates
-├── obsidian/                # Obsidian API adapters (may import `obsidian`)
-│   ├── main.ts              # Plugin entry point: lifecycle + view registration only (no commands — FR-002)
-│   ├── settings.ts          # Plugin settings interface and defaults (existing, extended)
-│   ├── board-view.ts        # FileView subclass (type `usm-board-view`): map-only rendering, no text display (FR-025); reads/writes `usm-view` (FR-026); view-switch detection (R-16)
-│   ├── board-parser.ts      # Parses board file: extracts wikilinks, reads frontmatter config attributes (incl. `usm-view`)
-│   └── story-attributes.ts  # Reads/normalizes story frontmatter (case-insensitive, PL/EN synonyms)
-└── ui/                      # DOM rendering (no `obsidian` imports; element methods only)
-    ├── board-renderer.ts    # Renders grid DOM: CSS Grid layout, sticky headers, story cards
-    ├── story-card.ts        # Individual story card: title cascade, Release badge, click handler
-    ├── debug-panel.ts       # Debug/dev mode: fps counter, story count, render time metrics
-    └── en.ts                # English label dictionary (single locale for MVP; foundation for future i18n)
+├── domain/                  # UNCHANGED in Iteration 2 (pure logic, zero Obsidian imports)
+│   ├── types.ts             # BoardConfig, StoryAttributes, GridModel, UNASSIGNED, cellKey
+│   ├── board-model.ts       # buildGridModel — untouched
+│   ├── sanitize.ts          # XSS sanitization — untouched
+│   └── debounce.ts          # Debounce utility — untouched
+├── obsidian/                # UNCHANGED in Iteration 2 (API adapters)
+│   ├── main.ts              # Plugin lifecycle + view registration
+│   ├── settings.ts          # Plugin settings (debugMode)
+│   ├── board-view.ts        # FileView (usm-board-view) + view routing
+│   ├── board-parser.ts      # Board file parsing
+│   └── story-attributes.ts  # Story frontmatter reading
+└── ui/                      # CHANGED in Iteration 2 (DOM rendering)
+    ├── board-renderer.ts    # REFACTORED: section-based DOM (header block + release sections)
+    ├── story-card.ts        # EXTENDED: reserved DnD handle element (invisible)
+    ├── debug-panel.ts       # UNCHANGED
+    └── en.ts                # EXTENDED: new label keys if needed (e.g., Unassigned section)
 
-# Tests (automated — FR-022, FR-023, FR-024)
+styles.css                   # REWRITTEN: new grid architecture, --usm-col-w, themes, reserved-element styles
+
 tests/
-├── unit/                    # Pure-logic unit tests (no Obsidian runtime needed)
-│   ├── board-parser.test.ts     # Flag detection, config, link extraction, duplicates, broken links
-│   ├── story-attributes.test.ts # PL/EN synonyms, case-insensitivity, title cascade, missing frontmatter
-│   ├── board-model.test.ts      # Column hierarchy, row order, Unassigned grouping, value normalization
-│   └── sanitize.test.ts         # XSS neutralization of note-derived strings
-├── integration/             # End-to-end pipeline tests (board + story files → GridModel)
-│   └── pipeline.test.ts         # Full data pipeline with fixture notes (SC-002, SC-003)
-├── performance/             # Automated performance tests (FR-024, SC-001)
-│   └── render-perf.test.ts      # Render time, fps proxy, story count on a defined board size
-└── fixtures/                # Versioned test fixture notes (FR-023)
-    ├── board.md                 # Board note with flag, config, links (incl. duplicates, broken)
-    ├── S1.md … S6.md            # Story notes covering all attribute combinations
-    └── README.md                # Fixture description and coverage matrix
+├── unit/                    # UNCHANGED (MVP core-logic tests MUST keep passing — SC-015)
+├── integration/             # UNCHANGED (pipeline tests MUST keep passing — SC-015)
+│   └── section-layout.test.ts  # (new) structural DOM tests for the section-based layout (R-23)
+├── performance/             # BASELINE REUSED (no >20% regression — SC-014)
+│   ├── baseline.json
+│   └── render-perf.test.ts
+└── fixtures/                # UNCHANGED (versioned fixture notes)
 ```
 
-**Structure Decision**: Single-project Obsidian plugin layout with the strict 3-layer directory structure required by Constitution Principle VII: `domain/` (pure functions — types, grid model, sanitization, debounce — with zero Obsidian imports), `obsidian/` (API adapters — plugin lifecycle, settings, view, parser, story attributes), and `ui/` (DOM rendering — grid renderer, story cards, debug panel, label dictionary). Dependency flow is acyclic: `obsidian/` → `ui/` → `domain/`. `main.ts` remains minimal (lifecycle + registration only). A `tests/` directory contains automated unit, integration, and performance tests (Vitest) with versioned fixtures — tests are a first-class part of the MVP (FR-022–FR-024). The core logic modules (`board-model`, `sanitize`, `debounce`) are pure functions (no Obsidian API dependency) so they are directly unit-testable in Node.js; the integration tests exercise the full pipeline with fixture data; performance tests measure render smoothness on a defined board size.
+**Structure Decision**: The strict 3-layer structure (Constitution Principle VII) is preserved; the refactor is confined to `src/ui/` (renderer + story card) and `styles.css`, plus new structural DOM tests. The domain layer (`src/domain/`) and the Obsidian adapters (`src/obsidian/`) are untouched — the cell key format (`activity::task::epic::release`) and `GridModel`/`buildGridModel` are unchanged, so the data pipeline and its tests are unaffected (SC-015). The renderer is refactored to emit the new section-based DOM (research R-17) and the stylesheet is rewritten around the fixed-width shared grid template (R-18) with Obsidian CSS variables (R-20).
 
 ## Complexity Tracking
 

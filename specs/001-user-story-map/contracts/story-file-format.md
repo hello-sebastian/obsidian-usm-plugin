@@ -22,7 +22,7 @@ Rules:
 - **Value types**: a plain string renders as a visual label; a wikilink (e.g., `Epic: "[[Logowanie]]"`) renders as a clickable header that opens the linked note (FR-007).
 - **Missing attributes**: any missing attribute (or a note with no frontmatter at all) places the story in the corresponding "Unassigned" section — no error, no crash (FR-011, spec edge case).
 - **Unknown attributes** in the story frontmatter are ignored.
-- The plugin never writes to story files (read-only map, FR-015).
+- Current versin of the plugin never writes to story files (read-only map, FR-015) – however edition/adding/delete/modifiing funcjins will be added in next specs.
 
 ## Title cascade (FR-009)
 

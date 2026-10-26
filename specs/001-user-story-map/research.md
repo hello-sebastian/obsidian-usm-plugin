@@ -139,3 +139,76 @@ All NEEDS CLARIFICATION items from the Technical Context were resolved during th
   - *Hook `active-leaf-change` in addition to `file-open`*: rejected — adds a second event source to keep in sync; more moving parts than a bounded retry.
   - *`workspace.on('active-leaf-change')` only*: rejected — does not fire when the same leaf's file changes, missing picker switches within an existing leaf.
   - *Polling the active leaf*: rejected — wasteful and non-idiomatic; event-driven detection is the Obsidian-sanctioned pattern.
+
+---
+
+# Iteration 2: Visual Layer Refactor (2026-10-26)
+
+All blocking decisions for Iteration 2 were resolved in [refactor-concept.md](refactor-concept.md) (section 9) and the 2026-10-26 clarify session (chevron visibility, Unassigned release section position). No NEEDS CLARIFICATION items remained in the Technical Context. This section records the remaining technical decisions, their rationale, and alternatives considered.
+
+## R-17: Multiple-grids section architecture (FR-029, FR-031)
+
+- **Decision**: The board DOM becomes a single scroll container (`.usm-board-map`, `overflow: auto`, both axes) holding a `width: max-content` inner wrapper with: (1) a sticky column-header block (`.usm-board-header`) — a CSS Grid with three rows (Activity/Task/Epic) where each header cell spans its children's columns; and (2) a vertical stack of release sections (`section.usm-release`), each with a horizontal header row (`.usm-release-header`: chevron toggle button + release title + top divider) and a body (`.usm-release-body`) containing its own CSS Grid (`.usm-release-grid`) of Epic columns, each a vertical stack of story cards. The release header is **not** sticky (it scrolls with its section); only the column-header block is sticky at the top.
+- **Rationale**: refactor-concept.md section 5 (resolved decision 6): a single grid with full-width release rows was rejected because a release would have no coherent DOM element — collapse/expand would require hiding rows (hidden tracks still leave `row-gap` gaps) and recomputing `--usm-grid-rows`; vertical DnD of a release would require repositioning every cell; per-release lazy rendering (IntersectionObserver) is only realistic with sections; release metadata (future) has a natural home in the section header; and `ReleaseSection` is a composable, independently testable unit. The multiple-grids cost (fixed column width) is accepted — fixed column width is industry standard (Notion, Trello) and matches the Figma design (~243 px).
+- **Alternatives considered**:
+  - *Single grid with full-width release header rows (`grid-column: 1 / -1`)*: rejected — release has no coherent DOM element (see rationale); collapse/DnD/lazy-render all become grid-template surgery.
+  - *CSS subgrid (one outer grid, sections as subgrids)*: rejected — sticky + subgrid is flaky and Chromium-version-dependent in Obsidian's embedded browser; the constitution favors simple, universal solutions (Principle V).
+  - *Flexbox columns for section bodies*: acceptable as an implementation detail (the concept doc notes bodies may be grid or flex), but the header block MUST remain a grid (it needs `span`). The decision is: header = grid; section bodies = grid (uniformity with the shared template, simplest alignment guarantee).
+
+## R-18: Fixed column width via shared grid template (FR-032, SC-012)
+
+- **Decision**: All grids (the header block and every release-section grid) use the identical column template `repeat(N, var(--usm-col-w))`, where `N` is the number of leaf (Epic) columns and `--usm-col-w` is a CSS custom property set once on the board root (desktop ~240 px; mobile ~160 px via media query). The header block's Activity/Task cells span their children's columns (`grid-column: span k`), so alignment across all grids is guaranteed by construction — no JS geometry.
+- **Rationale**: With separate grids, content-based track sizing (`max-content`) would let column widths diverge between the header and the sections (the core alignment risk identified in refactor-concept.md section 5). A fixed width shared by all grids makes alignment a structural guarantee, matches the Figma design (fixed ~243 px columns), and keeps the constitution's "no manual geometry in JS" rule (R-04). Long titles wrap/clamp within the fixed width (CSS `-webkit-line-clamp`, R-12 — unchanged mechanism).
+- **Alternatives considered**:
+  - *Content-based tracks (`minmax(160px, max-content)`)*: rejected — per-grid divergence breaks alignment (the MVP's single grid shared tracks, so it worked there; separate grids do not).
+  - *Measuring column widths in JS and syncing them*: rejected — violates R-04 (no JS geometry), adds a layout pass, and is fragile on resize/theme change.
+  - *CSS `subgrid`*: rejected — see R-17.
+
+## R-19: Sticky behavior (FR-030, FR-014, SC-011)
+
+- **Decision**: `.usm-board-header` is `position: sticky; top: 0` (z-index above section content) inside the single scroll container; its three rows keep a fixed height (`--usm-header-h`) so the block's total height is known. `.usm-release-header` is **not** sticky — it scrolls with its section (spec assumption: "The release header is not sticky"). The previous sticky left column (`.usm-rowheader`, 140 px desktop / 96 px mobile) is removed entirely, freeing the full width for story columns (SC-011: release header ≤ 32 px vertical on mobile).
+- **Rationale**: FR-030 requires the column header block to be sticky top with three rows; the spec assumption explicitly de-stickies the release header (it is a section header, not a table header). Removing the sticky left column is the main mobile win of the refactor (US7). The MVP's verified sticky-grid mechanics (repo memory: `width: max-content` on the inner wrapper, fixed header-row heights, z-index layering) carry over unchanged.
+- **Alternatives considered**:
+  - *Sticky release title (`position: sticky; left: 0` within the section header)*: deferred (refactor-concept.md section 9, decision 4 — "do dopracowania później"); not part of this iteration's scope.
+  - *Sticky release headers (stacking above/below the column header)*: rejected — contradicts the spec assumption and adds z-index/offset complexity for no mobile benefit.
+
+## R-20: Theming via L2 Obsidian variables + color-mix (FR-033, SC-013)
+
+- **Decision**: `styles.css` uses only live `var(--...)` references to native Obsidian CSS variables (L2 per the token strategy in `figma-agent-manual.md`): `--background-secondary` (story card surface), `--background-modifier-border` (card border, release divider), `--background-primary-alt` (badge background), `--text-normal` (titles), `--text-muted` (secondary text). Accent shades with no native equivalent (header cell backgrounds/borders, header badge) are derived via `color-mix(in oklch, var(--interactive-accent) X%, var(--background-primary))`. No hard-coded hex colors, no color caching in JS (colors resolve at paint time, so Obsidian's automatic light/dark switching works without a reload).
+- **Rationale**: FR-033 (both themes, no hard-coded colors) + the approved token strategy (repo memory: L2 is theme-agnostic by design; `color-mix()` with `var()` is safe). The exact accent percentages and the L2 choice for the Epic column background are refinement details (refactor-concept.md section 9, decision 3 — "do dopracowania później") and do not block the critical path.
+- **Alternatives considered**:
+  - *Hard-coded Figma L1 values (fiolet-light/*, wb-light/*)*: rejected — L1 is a light-mode-only reference; it would break dark mode and violate the token contract.
+  - *Caching resolved colors in JS (getComputedStyle at load)*: rejected — breaks Obsidian's runtime theme switching and the token contract.
+
+## R-21: Reserved DOM elements for future features (FR-034, US10)
+
+- **Decision**: The renderer emits structurally present but inert reserved elements: (1) `button.usm-release-toggle` (chevron) in every `.usm-release-header` — **visible** (per Figma) but non-interactive (no click handler, `aria-hidden`-equivalent inertness: no `aria-expanded`, no action); (2) reserved DnD handle elements in story cards (`.usm-story-card`) and header cells (`.usm-header-cell--activity/--task/--epic`) — **invisible** (CSS `display: none` or `visibility: hidden`); (3) reserved add/remove button slots in header cells and release headers — **invisible**. No event listeners are attached to any reserved element; no future-feature behavior (collapse, DnD, add/remove) is triggered by any interaction.
+- **Rationale**: FR-034 + clarify Q1 (2026-10-26): the chevron is a visible design element (satisfying FR-029/US9) but non-interactive; the "invisible" scope applies only to DnD handles and add/remove buttons. The DOM preparation (refactor-concept.md section 8) gives future features (collapse, DnD, CRUD, keyboard nav) their structural home without implementing them.
+- **Alternatives considered**:
+  - *Chevron completely hidden*: rejected — contradicts the Figma design (US9) and the clarify Q1 decision.
+  - *Chevron visible and active (collapse implemented now)*: rejected — collapse is explicitly out of scope (US10: "This iteration does not implement any of these features").
+  - *No reserved elements at all*: rejected — FR-034 requires them; they are the cheap insurance that makes future iterations non-invasive.
+
+## R-22: Unassigned release section rendered first (FR-011, FR-031)
+
+- **Decision**: Stories without a Release attribute render in a dedicated "Unassigned" release section — a self-contained section like any other (header with chevron + "Unassigned" title + top divider, body grid of Epic columns) — positioned as the **first section** (top of the board, directly below the sticky column-header block). The "Unassigned" groups at the Activity/Task/Epic levels remain "Unassigned" column groups in the header block (unchanged).
+- **Rationale**: Clarify Q2 (2026-10-26). The domain model already buckets missing Release values into the `UNASSIGNED` sentinel row (FR-011, `buildGridModel` unchanged); the renderer simply maps the sentinel row to a section rendered first. Zero domain changes.
+- **Alternatives considered**:
+  - *Unassigned zone outside the sections (e.g., at the bottom)*: rejected — inconsistent with the section-based structure; the user chose the first-section position.
+  - *Hide unassigned stories / warn only*: rejected — violates FR-011 (defensive grouping, no data loss).
+
+## R-23: Layout verification strategy (SC-011, SC-012, SC-014)
+
+- **Decision**: Verification splits into two layers. **Automated (jsdom/Vitest)**: structural guarantees — every grid (header + all sections) carries the identical `grid-template-columns` value (`repeat(N, var(--usm-col-w))`); the Unassigned section is the first `section.usm-release`; reserved elements are present with the expected classes and no listeners; the release header is a horizontal row (not a left column); the existing performance baseline (model build time, DOM render time, story count) shows no >20% regression (SC-014). **Manual (real Obsidian, quickstart)**: pixel-level behavior jsdom cannot compute — mobile release header ≤ 32 px (SC-011), visual column alignment across header and sections (SC-012), both themes with sufficient contrast (SC-013).
+- **Rationale**: jsdom does not compute CSS layout (no box model, no sticky, no media queries), so pixel measurements are infeasible in the automated suite; the structural guarantees are exactly what makes the pixel behavior deterministic (same template ⇒ aligned columns), so the automated layer verifies the cause and the manual layer verifies the effect. This matches the MVP's established split (automated core logic + manual user-facing behavior, R-13).
+- **Alternatives considered**:
+  - *Playwright/real-browser E2E for pixel checks*: rejected for this iteration — high setup cost, flaky, and the constitution's dependency-minimization rule favors a small automated suite (R-13); the manual quickstart scenarios already cover real-environment behavior.
+  - *Manual-only verification*: rejected — SC-012's "automated layout tests" and the regression guard (SC-014) require an automated layer.
+
+## R-24: Static style guard for the token contract (FR-033)
+
+- **Decision**: A static test (Vitest, reading `styles.css` as text) asserts the token contract: no hard-coded hex/rgb color literals in the board styles, and every color declaration uses `var(--...)` or `color-mix(... var(--interactive-accent) ...)`. This complements the existing `inline-styling-guard.test.ts` (which enforces the no-inline-JS-styling rule in `src/**/*.ts`).
+- **Rationale**: FR-033 (no hard-coded colors) is a static property of the stylesheet — cheap to enforce continuously, and it prevents regressions when the stylesheet is edited in later iterations. The existing guard-test pattern (MVP) is reused.
+- **Alternatives considered**:
+  - *Manual theme review only*: rejected — insufficient as a regression guard; the static check is deterministic and runs in CI.
+  - *Full CSS linting toolchain (stylelint)*: rejected — a new dependency for a rule a 20-line regex test covers (constitution: minimize dependencies).

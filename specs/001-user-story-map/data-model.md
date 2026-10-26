@@ -93,6 +93,63 @@ Built by `board-model.ts` from `BoardConfig` + `StoryEntry[]`.
 
 The model has no lifecycle of its own — it is rebuilt from scratch on every (debounced) update event. View selection is not part of the model: the plugin's `usm-board-view` renders the map only (FR-025), while "Edit MD" / "View MD" are Obsidian's native `MarkdownView` (source/preview modes). The last-selected view is persisted as the `usm-view` frontmatter attribute (FR-026): read on open (default `map`), written on switch (last switch wins across panes; other open panes are unaffected until reopened).
 
+## Visual layer structure (Iteration 2, V-01)
+
+The domain model (E-01–E-06) is **unchanged** in Iteration 2. This section defines the visual-layer structure the renderer emits from the same `GridModel` (research R-17–R-22, refactor-concept.md section 4).
+
+### DOM tree
+
+```text
+.usm-board-map                      # single scroll container (overflow: auto, both axes)
+└── .usm-board                      # width: max-content inner wrapper
+    ├── .usm-board-header           # sticky top (z-index above sections), CSS Grid, 3 rows
+    │   ├── .usm-header-row--activity   # row 1: .usm-header-cell--activity (spans its Task children)
+    │   │   └── [RESERVED: DnD handle, add/remove buttons — invisible, inert]
+    │   ├── .usm-header-row--task       # row 2: .usm-header-cell--task (spans its Epic children)
+    │   │   └── [RESERVED: DnD handle, add/remove buttons — invisible, inert]
+    │   └── .usm-header-row--epic       # row 3: .usm-header-cell--epic (leaf, 1 column each)
+    │       └── [RESERVED: DnD handle, add/remove buttons — invisible, inert]
+    └── .usm-board-releases
+        └── section.usm-release        # one per release row, in order: UNASSIGNED first, then releaseRowOrder
+            ├── .usm-release-header    # horizontal row (NOT sticky), top divider
+            │   ├── button.usm-release-toggle   # chevron — VISIBLE, inert (no handler, no aria-expanded)
+            │   ├── .usm-release-title          # release label (text node, sanitized)
+            │   └── [RESERVED: DnD handle, add/remove buttons — invisible, inert]
+            └── .usm-release-body
+                └── .usm-release-grid   # CSS Grid, identical template to .usm-board-header
+                    └── .usm-epic-column        # one per Epic leaf column
+                        └── .usm-epic-column-cards
+                            └── .usm-story-card # .usm-story-card-header / .usm-story-card-footer
+                                └── [RESERVED: DnD handle — invisible, inert]
+```
+
+### Shared grid template (alignment guarantee, R-18)
+
+- Every grid (`.usm-board-header` and each `.usm-release-grid`) uses the identical template: `grid-template-columns: repeat(N, var(--usm-col-w))`, where `N` = number of Epic leaf columns.
+- **Observation mechanism (A-01)**: the renderer sets the template as an inline CSS custom property `--usm-grid-cols: repeat(N, var(--usm-col-w))` on **each** grid element (`.usm-board-header` and every `.usm-release-grid`). The stylesheet maps it: `grid-template-columns: var(--usm-grid-cols)`. The structural DOM test (T002) reads `el.style.getPropertyValue('--usm-grid-cols')` from each grid and asserts the value is non-empty, **identical across all grids**, and matches `repeat(N, var(--usm-col-w))` with `N` = Epic leaf column count. This is reliable in jsdom (inline custom properties round-trip via `style.setProperty`/`getPropertyValue`); computed `grid-template-columns` is NOT observable in jsdom (no layout engine, no `var()` resolution).
+- `--usm-col-w` is set once on the board root: ~240 px desktop, ~160 px mobile (media query). Fixed width is a design decision, not a user setting.
+- Header cells span their children: Activity cell `grid-column: span k` (k = number of Task children), Task cell `span m` (m = number of Epic children), Epic cell = 1 column.
+- Alignment across all grids is guaranteed by construction — no JS geometry (R-04, R-18).
+
+### Section ordering (R-22)
+
+- Release sections render in `GridModel` row order with the `UNASSIGNED` release row mapped to a dedicated "Unassigned" section rendered **first** (top of the board, directly below the sticky header block).
+- A release row with no stories renders an empty grid (defensive guarantee; with the current domain model, release rows are derived from stories, so this is reachable only via a synthetic model — release mechanics are deferred to a later iteration).
+- "Unassigned" groups at the Activity/Task/Epic levels remain "Unassigned" column groups in the header block (unchanged, FR-011).
+
+### Reserved elements (R-21)
+
+| Element | Visibility | Interactivity |
+|---------|-----------|---------------|
+| `button.usm-release-toggle` (chevron) | visible (per Figma) | inert — no click handler, no `aria-expanded`, no action |
+| DnD handles (story cards, header cells, release headers) | invisible | inert — no listeners |
+| Add/remove button slots (header cells, release headers) | invisible | inert — no listeners |
+
+### Styling contract (R-20, R-24)
+
+- Colors: L2 Obsidian variables only (`--background-secondary`, `--background-modifier-border`, `--background-primary-alt`, `--text-normal`, `--text-muted`); accent shades via `color-mix(in oklch, var(--interactive-accent) X%, var(--background-primary))`. No hard-coded hex/rgb literals (enforced by the static guard test, R-24).
+- Geometry: `--usm-*` custom properties only (per constitution v1.6.1 clarification); no inline JS visual styling.
+
 ## Validation rules (summary)
 
 1. Board flag missing → file is not a board; no map (FR-001).

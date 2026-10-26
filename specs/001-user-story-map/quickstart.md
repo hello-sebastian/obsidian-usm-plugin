@@ -1,6 +1,6 @@
 # Quickstart: User Story Map Board View
 
-**Feature**: `001-user-story-map` | **Date**: 2026-10-15 (updated 2026-10-23)
+**Feature**: `001-user-story-map` | **Date**: 2026-10-15 (updated 2026-10-26, Iteration 2)
 
 Runnable validation scenarios that prove the feature works end-to-end. Prerequisites and setup are listed first; each scenario maps to a user story / success criterion from [spec.md](spec.md). File formats are defined in [contracts/board-file-format.md](contracts/board-file-format.md) and [contracts/story-file-format.md](contracts/story-file-format.md) — this guide references them instead of duplicating them.
 
@@ -152,6 +152,37 @@ release: "2.0"
 1. Open the board on a phone/tablet.
 2. **Expected**: the map renders, scrolls in both axes with sticky headers, cards are tappable (open the note), and debug metrics are available. No desktop-only behavior.
 
+## Iteration 2 scenarios (Visual Layer Refactor)
+
+The MVP scenarios Q1–Q10 (incl. Q1b) remain valid and MUST still pass after the refactor (SC-015). The scenarios below verify the new section-based layout.
+
+### Q11 — Release sections and sticky header block (FR-029, FR-030, US8)
+
+1. Open a board with at least two releases (e.g., `usm-release-order: appearance` with stories in two different releases).
+2. **Expected**: the board shows a sticky column-header block (Activity/Task/Epic, three rows) at the top; below it, each release renders as a self-contained section with a horizontal header row (chevron + release title + top divider) and its own grid of Epic columns. The release header is **not** sticky — it scrolls away with its section; the column-header block stays pinned at the top while scrolling vertically.
+3. Scroll horizontally. **Expected**: the sticky header block scrolls horizontally with the content (columns stay aligned); no sticky left column exists anymore.
+
+### Q12 — Unassigned release section first (FR-011, FR-031, US8 scenario 4)
+
+1. Use a board where at least one story has no `release` attribute (and at least one story has a release).
+2. **Expected**: a dedicated "Unassigned" release section renders as the **first section** (top of the board, directly below the sticky header block), containing the stories without a Release. Other release sections follow in the configured order. "Unassigned" groups at the Activity/Task/Epic levels still appear as "Unassigned" column groups in the header block.
+
+### Q13 — Column alignment and fixed width (FR-032, SC-012)
+
+1. Open a board with several Epic columns of differing content lengths (short and long titles, varying card counts per release).
+2. **Expected**: columns are perfectly aligned across the header block and every release section — the same fixed width in every grid (no per-grid divergence). Long titles wrap/clamp within the column width.
+
+### Q14 — Mobile layout (FR-030, SC-011, US7)
+
+1. Open the board on a phone (~375 px wide) or narrow the Obsidian window to ~375 px.
+2. **Expected**: the release header occupies ≤ 32 px of vertical space (compact horizontal row); the column-header block is sticky at the top; the board scrolls in both axes; columns use the mobile width (~160 px); no sticky left column.
+
+### Q15 — Themes and reserved DOM (FR-033, FR-034, SC-013, US9, US10)
+
+1. Switch Obsidian between light and dark themes (Settings → Appearance). **Expected**: the board renders correctly in both themes — no hard-coded colors, no unreadable text, accent shades adapt automatically (no reload needed).
+2. Inspect the DOM (DevTools). **Expected**: every `.usm-release-header` contains a visible, inert `button.usm-release-toggle` (chevron) — clicking it does nothing; DnD handles and add/remove button slots are present in the DOM but invisible; no reserved element responds to any interaction.
+3. **Expected**: the chevron is visible (per the Figma design) but non-interactive — no collapse, no DnD, no add/remove behavior in this iteration.
+
 ## Automated test suite (FR-022, FR-023, FR-024, SC-009, SC-010)
 
 The automated suite runs in Node.js (no Obsidian instance required) against the versioned fixtures in `tests/fixtures/`:
@@ -169,8 +200,8 @@ npm run test:perf       # render performance on a defined board size (FR-024, SC
 - Performance tests pass: render time and story count on the defined board size are within the thresholds recorded by the test run (thresholds are established by the first passing run and then enforced).
 - The full suite completes in under 2 minutes on a clean environment (SC-010).
 
-The manual scenarios Q1–Q10 (incl. Q1b) below cover the user-facing behavior that requires the real Obsidian environment (three-view picker, `usm-view` persistence, 2D navigation, live updates, mobile).
+The manual scenarios Q1–Q10 (incl. Q1b) cover the user-facing behavior that requires the real Obsidian environment (three-view picker, `usm-view` persistence, 2D navigation, live updates, mobile). The Iteration 2 scenarios Q11–Q15 cover the section-based layout (release sections, Unassigned-first, column alignment, mobile header height, themes, reserved DOM).
 
 ## Pass criteria
 
-All automated tests pass (unit + integration + performance, under 2 minutes) **and** all manual scenarios Q1–Q10 pass on Desktop; Q10 passes on at least one mobile device. Any failure blocks `/speckit-tasks` completion for the affected requirement.
+All automated tests pass (unit + integration + performance, under 2 minutes) **and** all manual scenarios Q1–Q15 pass on Desktop; Q10 and Q14 pass on at least one mobile device. Any failure blocks `/speckit-tasks` completion for the affected requirement.
