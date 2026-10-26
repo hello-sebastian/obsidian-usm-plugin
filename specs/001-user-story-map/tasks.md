@@ -56,7 +56,9 @@ description: "Task list for User Story Map Board View — Iteration 2 (Visual La
 
   **Verified (2026-10-26)**: `npm run build` OK; `npm run lint` 0 errors; full suite → 154/154 passed (12 files, ~5.4s).
   **Baseline decision (2026-10-26, user-approved)**: the section-based architecture (mandated by T003 / data-model.md V-01) renders ~2400 additional structural DOM elements (per-cell `.usm-epic-column` + `.usm-epic-column-cards` pairs, 15 separate section grids), which is a deliberate, known cost (refactor-concept.md: "potencjalnie więcej elementów DOM; do zmierzenia"). Measured on the same machine: old single-grid renderer 480.8 ms vs new section-based renderer ~624–647 ms (median 623.74 ms) — a ~31% render-time increase, beyond the 20% SC-014 budget against the MVP baseline. The user accepted the reduced performance at this stage (optimizations and renderer refactoring are planned for later iterations), so `tests/performance/baseline.json` was re-recorded for the new architecture: `renderMs: 623.74` (re-recorded, median of 5 runs after 2 warmup — same methodology). `modelBuildMs: 13.59` was kept at the committed MVP value because the domain model is unchanged in this iteration (a freshly recorded 11.15 ms sample was a low outlier that flaked the guard). The regression guard now protects the new baseline against future regressions.
-- [ ] T005 Run the full automated suite (`npm test`) and confirm: the new structural tests in `tests/integration/section-layout.test.ts` pass, and ALL existing MVP unit/integration tests still pass unchanged (SC-015)
+- [X] T005 Run the full automated suite (`npm test`) and confirm: the new structural tests in `tests/integration/section-layout.test.ts` pass, and ALL existing MVP unit/integration tests still pass unchanged (SC-015)
+
+  **Verified (2026-10-26)**: `npm test` → 154/154 passed (12 files, ~5.2s) — the 7 new structural tests in `tests/integration/section-layout.test.ts` pass and all 147 pre-existing MVP unit/integration/performance tests pass unchanged (SC-015).
 
 **Checkpoint**: Foundation ready — the board renders in the new section-based layout; user story work can now begin
 
