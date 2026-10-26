@@ -34,7 +34,9 @@ description: "Task list for User Story Map Board View — Iteration 2 (Visual La
 
 **Purpose**: Establish a verified green baseline before the refactor (SC-015 reference point)
 
-- [ ] T001 Verify the pre-refactor baseline: run `npm install`, `npm test` (expect the full MVP suite green), `npm run build`, and `npm run lint` from the repository root; record the results (test count, performance baseline in `tests/performance/baseline.json`) as the SC-015/SC-014 reference point
+- [X] T001 Verify the pre-refactor baseline: run `npm install`, `npm test` (expect the full MVP suite green), `npm run build`, and `npm run lint` from the repository root; record the results (test count, performance baseline in `tests/performance/baseline.json`) as the SC-015/SC-014 reference point
+
+  **Baseline (2026-10-26)**: `npm test` → 147/147 passed (11 files, ~4.2s); `npm run build` → OK (main.js 16.7 KB); `npm run lint` → 0 errors, 46 pre-existing warnings; performance baseline `tests/performance/baseline.json` → `modelBuildMs: 13.59`, `renderMs: 517.07` (SC-014/SC-015 reference point).
 
 ---
 
