@@ -68,7 +68,7 @@ Task column breakdown (Activity → Task):
 3. Logowanie → Login (S4)
 4. Unassigned → First run (S5)
 
-Release rows (appearance order): `1.0 MVP`, `Unassigned`, `2.0`.
+Release rows (rendered order): `Unassigned` (auto-generated, always rendered first), then the assigned releases in appearance order: `1.0 MVP`, `2.0`.
 
 ## Invariants
 
