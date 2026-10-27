@@ -106,7 +106,8 @@ description: "Task list for User Story Map Board View — Iteration 2 (Visual La
 
 ### Tests for User Story 9 ⚠️
 
-- [ ] T009 [P] [US9] Add the static token guard test in `tests/unit/token-guard.test.ts` (regression guard for FR-033, research R-24): read `styles.css` as text and assert no hard-coded hex/rgb color literals appear and every color declaration uses `var(--...)`, `color-mix(... var(--interactive-accent) ...)`, or a CSS color keyword (`transparent`, `currentColor`, `inherit`); the test must pass against the final stylesheet
+- [X] T009 [P] [US9] Add the static token guard test in `tests/unit/token-guard.test.ts` (regression guard for FR-033, research R-24): read `styles.css` as text and assert no hard-coded hex/rgb color literals appear and every color declaration uses `var(--...)`, `color-mix(... var(--interactive-accent) ...)`, or a CSS color keyword (`transparent`, `currentColor`, `inherit`); the test must pass against the final stylesheet
+  - **Verified (2026-10-27)**: `tests/unit/token-guard.test.ts` created — 4 tests (non-empty stylesheet, no hex literals, no rgb/rgba/hsl/hsla literals, every color declaration uses `var(--...)` / `color-mix(... var(...) ...)` / an allowed keyword). Passes against the current token-only stylesheet (4/4); `npx tsc --noEmit` clean. Will re-run after T010 to confirm the Figma design stays token-only.
 
 ### Implementation for User Story 9
 
