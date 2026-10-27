@@ -108,23 +108,6 @@ Principle I). */
 	text-overflow: ellipsis;
 }
 
-/* Badge chip inside a header card (US9, Figma node 76:421). A reserved
-element (US10) — styled here as part of the visual layer; the element is
-emitted by the renderer in T013. */
-.usm-header-badge {
-	display: inline-block;
-	margin-top: var(--size-4-1);
-	padding: 2px var(--size-4-1);
-	border-radius: var(--radius-s);
-	background-color: color-mix(in oklch, var(--interactive-accent) 15%, var(--background-primary));
-	color: var(--interactive-accent);
-	font-size: var(--font-smaller);
-	font-weight: var(--font-normal);
-	white-space: nowrap;
-	overflow: hidden;
-	text-overflow: ellipsis;
-}
-
 /* Vertical stack of release sections (one per release row). */
 .usm-board-releases {
 	display: flex;
@@ -155,14 +138,48 @@ Not sticky (Iteration 2 decision). */
 	border-top: 2px solid var(--background-modifier-border);
 }
 
-/* Release title (text node; wikilink-capable per FR-007). */
+/* Release title (text node; wikilink-capable per FR-007). flex: 1 +
+min-width: 0 let it shrink and ellipsize next to the reserved chevron. */
 .usm-release-title {
+	flex: 1;
+	min-width: 0;
 	color: var(--text-normal);
 	font-size: var(--font-small);
 	font-weight: var(--font-semibold);
 	white-space: nowrap;
 	overflow: hidden;
 	text-overflow: ellipsis;
+}
+
+/* Reserved release toggle (US10, FR-034): a visible chevron (per the Figma
+design) that is inert — no hover/focus affordances, no pointer cursor.
+Collapse/expand is a future feature; the button is its structural home. */
+.usm-release-toggle {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	flex: none;
+	width: 24px;
+	height: 24px;
+	padding: 0;
+	border: none;
+	background: none;
+	color: var(--text-normal);
+	cursor: default;
+}
+.usm-release-toggle:hover,
+.usm-release-toggle:focus,
+.usm-release-toggle:focus-visible {
+	color: var(--text-normal);
+	outline: none;
+}
+
+/* Reserved DnD handles and add/remove button slots (US10, FR-034):
+structurally present but invisible and inert. display: none keeps them out
+of the layout and out of the accessibility tree. */
+.usm-dnd-handle,
+.usm-add-remove-slot {
+	display: none;
 }
 
 /* Release section body: holds the section's grid. */
