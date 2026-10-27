@@ -44,6 +44,11 @@ export function createStoryCard(
 ): HTMLElement {
 	const card = parent.createDiv({ cls: 'usm-story-card' });
 
+	// Reserved DnD handle (FR-034, research R-21): structurally present but
+	// inert — no event listeners, hidden by the stylesheet (T015). It is the
+	// structural home for future drag-and-drop of individual stories.
+	card.createDiv({ cls: 'usm-dnd-handle' });
+
 	// Header: the resolved title (FR-009). Text-node insertion keeps the
 	// note-derived title inert (FR-016).
 	const header = card.createDiv({ cls: 'usm-story-card-header' });
