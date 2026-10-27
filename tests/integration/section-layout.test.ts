@@ -298,7 +298,7 @@ describe('T012 — reserved DOM for future features (FR-034, R-21)', () => {
 		const container = renderModel(buildFixtureModel());
 		const card = container.querySelector('.usm-story-card');
 		expect(card).not.toBeNull();
-		const handle = card!.querySelector('.usm-dnd-handle');
+		const handle = card!.querySelector<HTMLElement>('.usm-dnd-handle');
 		expect(handle).not.toBeNull();
 		const before = snapshot(card!);
 		handle!.click();

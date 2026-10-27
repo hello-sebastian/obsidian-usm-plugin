@@ -44,6 +44,7 @@
  *   affordances (clickable wikilink headers and story cards that open
  *   their note in the standard view).
  */
+import { setIcon } from 'obsidian';
 import type { GridModel, StoryEntry } from '../domain/types';
 import { UNASSIGNED, cellKey, normalizeKey } from '../domain/types';
 import { t } from './en';
@@ -138,6 +139,7 @@ export class BoardRenderer {
 			});
 			cell.setCssProps({ '--usm-col': `span ${span}`, '--usm-row': '1' });
 			this.renderHeaderContent(cell, 'activity', activity.activity, model);
+			this.addReservedSlots(cell);
 		}
 
 		// Row 2: Task cells span their Epic children's columns.
@@ -150,6 +152,7 @@ export class BoardRenderer {
 					'--usm-row': '2',
 				});
 				this.renderHeaderContent(cell, 'task', task.task, model);
+				this.addReservedSlots(cell);
 			}
 		}
 
@@ -161,6 +164,7 @@ export class BoardRenderer {
 					const cell = epicRow.createDiv({ cls: 'usm-header-cell--epic' });
 					cell.setCssProps({ '--usm-col': 'span 1', '--usm-row': '3' });
 					this.renderHeaderContent(cell, 'epic', epic, model);
+					this.addReservedSlots(cell);
 				}
 			}
 		}
@@ -226,8 +230,18 @@ export class BoardRenderer {
 		model: GridModel,
 	): void {
 		const header = section.createDiv({ cls: 'usm-release-header' });
+		// Reserved release toggle (FR-034, R-21): a visible chevron that is
+		// structurally present but inert — no click handler, no
+		// aria-expanded, aria-hidden + tabindex=-1 so it is skipped by
+		// assistive tech and keyboard navigation. Collapse/expand is a
+		// future feature; the button is its structural home.
+		const toggle = header.createEl('button', { cls: 'usm-release-toggle' });
+		toggle.setAttribute('aria-hidden', 'true');
+		toggle.setAttribute('tabindex', '-1');
+		setIcon(toggle, 'chevron-down');
 		const title = header.createDiv({ cls: 'usm-release-title' });
 		this.renderHeaderContent(title, 'release', releaseLabel, model);
+		this.addReservedSlots(header);
 	}
 
 	/**
@@ -321,5 +335,17 @@ export class BoardRenderer {
 	 */
 	private renderCard(parent: HTMLElement, entry: StoryEntry): void {
 		createStoryCard(parent, entry, this.openLink);
+	}
+
+	/**
+	 * Append the reserved DnD handle and add/remove button slot to `parent`
+	 * (FR-034, research R-21). Both elements are structurally present but
+	 * inert: no event listeners are attached, and the stylesheet hides them
+	 * (T015). They give future features (drag-and-drop, add/remove) their
+	 * structural home without implementing any behavior in this iteration.
+	 */
+	private addReservedSlots(parent: HTMLElement): void {
+		parent.createDiv({ cls: 'usm-dnd-handle' });
+		parent.createDiv({ cls: 'usm-add-remove-slot' });
 	}
 }
