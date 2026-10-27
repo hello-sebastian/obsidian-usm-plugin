@@ -86,19 +86,40 @@ children's columns, Task cells span their Epic children's columns, and Epic
 cells are leaf columns (FR-005). Placement is driven by --usm-col /
 --usm-row (set by the renderer); auto-placement packs each row's cells
 left-to-right. */
+/* Header cells as accent-tinted cards (US9, Figma node 76:421, refactor-
+concept.md 7.1). The accent shades are derived via color-mix() over
+var(--interactive-accent) so light/dark themes adapt (no hard-coded colors,
+Principle I). */
 .usm-header-cell--activity,
 .usm-header-cell--task,
 .usm-header-cell--epic {
 	grid-column: var(--usm-col);
 	grid-row: var(--usm-row);
-	padding: var(--size-4-1) var(--size-4-2);
-	border: 1px solid var(--background-modifier-border);
-	border-radius: var(--radius-s);
-	background-color: var(--background-secondary);
-	color: var(--text-normal);
+	padding: var(--size-4-2) var(--size-4-3);
+	border: 1px solid color-mix(in oklch, var(--interactive-accent) 30%, var(--background-primary));
+	border-radius: var(--radius-m);
+	background-color: color-mix(in oklch, var(--interactive-accent) 8%, var(--background-primary));
+	color: var(--interactive-accent);
 	font-size: var(--font-small);
-	font-weight: var(--font-medium);
-	text-align: center;
+	font-weight: var(--font-semibold);
+	text-align: left;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+/* Badge chip inside a header card (US9, Figma node 76:421). A reserved
+element (US10) — styled here as part of the visual layer; the element is
+emitted by the renderer in T013. */
+.usm-header-badge {
+	display: inline-block;
+	margin-top: var(--size-4-1);
+	padding: 2px var(--size-4-1);
+	border-radius: var(--radius-s);
+	background-color: color-mix(in oklch, var(--interactive-accent) 15%, var(--background-primary));
+	color: var(--interactive-accent);
+	font-size: var(--font-smaller);
+	font-weight: var(--font-normal);
 	white-space: nowrap;
 	overflow: hidden;
 	text-overflow: ellipsis;
@@ -118,25 +139,27 @@ column-header block sticks. */
 .usm-release {
 	display: flex;
 	flex-direction: column;
-	gap: var(--size-4-1);
+	gap: var(--size-4-2);
 }
 
 /* Horizontal release header (US7, US8): a full-width row above the
 section's grid, with a top divider so sections are visually separated. */
+/* Release header (US9): a thin horizontal row (chevron + bold title) with a
+2px top divider and no background — the section sits on the board surface.
+Not sticky (Iteration 2 decision). */
 .usm-release-header {
 	display: flex;
 	align-items: center;
-	padding: var(--size-4-1) var(--size-4-2);
-	border-top: 1px solid var(--background-modifier-border);
-	background-color: var(--background-secondary);
-	border-radius: var(--radius-s);
+	gap: var(--size-4-1);
+	padding: var(--size-4-1) 0;
+	border-top: 2px solid var(--background-modifier-border);
 }
 
 /* Release title (text node; wikilink-capable per FR-007). */
 .usm-release-title {
 	color: var(--text-normal);
 	font-size: var(--font-small);
-	font-weight: var(--font-medium);
+	font-weight: var(--font-semibold);
 	white-space: nowrap;
 	overflow: hidden;
 	text-overflow: ellipsis;
@@ -160,10 +183,16 @@ construction (R-18). */
 
 /* One Epic leaf column within a release grid; holds the story cards for
 that column in this release (FR-008). */
+/* One Epic leaf column within a release grid; holds the story cards for
+that column in this release (FR-008). Rendered as a light rounded container
+(US9, Figma "Task Column") so the cards sit on a distinct surface. */
 .usm-epic-column {
 	grid-column: var(--usm-col);
 	display: flex;
 	flex-direction: column;
+	padding: var(--size-4-2);
+	border-radius: var(--radius-m);
+	background-color: var(--background-primary-alt);
 }
 
 /* Story cards stacked within an Epic column. */
@@ -233,7 +262,7 @@ via tabindex + role=button (Constitution Principle IV). */
 	display: inline-block;
 	padding: 2px var(--size-4-1);
 	border-radius: var(--radius-s);
-	background-color: var(--background-modifier-hover);
+	background-color: var(--background-primary-alt);
 	color: var(--text-muted);
 	font-size: var(--font-smaller);
 }
