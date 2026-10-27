@@ -1,0 +1,407 @@
+/*
+User Story Map plugin styles.
+
+Uses Obsidian CSS variables for full light/dark theme adaptation
+(Constitution Principle I). Covers the board view container, the
+section-based map layout (sticky column-header block + one grid per
+release section, Iteration 2), the story cards, the read-only source
+view, and the debug panel.
+*/
+
+/* Board map container: single scroll container (research R-04).
+Read-only (T020, FR-015): the map is a projection of the Markdown source —
+no editing affordances. Text is not selectable (the map is a navigation
+surface, not a document) and the native context menu is suppressed by the
+view so no mutation actions are offered. */
+.usm-board-map {
+	position: relative;
+	width: 100%;
+	height: 100%;
+	overflow: auto;
+	padding: var(--size-4-3);
+	background-color: var(--background-primary);
+	user-select: none;
+	-webkit-user-select: none;
+}
+
+.usm-board-map-heading {
+	color: var(--text-muted);
+	font-size: var(--font-ui-small);
+	margin-bottom: var(--size-4-2);
+}
+
+/* Section-based layout (Iteration 2, T004). The board is a vertical stack:
+a sticky column-header block followed by one release section per release
+row (research R-17, R-18, R-19, R-22; data-model.md V-01). The renderer
+sets the --usm-grid-cols custom property on every grid (the header block
+and all section grids) and --usm-col / --usm-row per header cell; this
+stylesheet maps them onto the grid properties (research R-04: CSS Grid, no
+manual geometry). The board is width: max-content so the sticky header is
+constrained by the full content width, and the single scroll container
+(.usm-board-map) scrolls on both axes (FR-014, SC-006). */
+
+/* Inner board wrapper: as wide as its content (and at least the container
+width) so the sticky header and the release sections share the same
+horizontal extent (R-18). Also the single source of truth for the fixed
+Epic column width (--usm-col-w), referenced by the shared --usm-grid-cols
+template the renderer emits on every grid (R-18). */
+.usm-board {
+	--usm-col-w: 240px;
+	width: max-content;
+	min-width: 100%;
+}
+
+/* Sticky column-header block (FR-014, SC-006): a CSS Grid with three rows
+(Activity / Task / Epic) that stays pinned to the top while scrolling down.
+The row elements are display: contents, so the header cells are the grid
+items and span their children's columns via --usm-col (FR-005). */
+.usm-board-header {
+	/* Fixed height of each of the three column-header rows (Activity /
+	Task / Epic). */
+	--usm-header-h: 28px;
+	position: sticky;
+	top: 0;
+	z-index: 2;
+	display: grid;
+	grid-template-columns: var(--usm-grid-cols);
+	grid-template-rows: repeat(3, var(--usm-header-h));
+	gap: var(--size-4-1);
+	/* Opaque background so release content does not show through the grid
+	gaps while scrolling. */
+	background-color: var(--background-primary);
+	padding: var(--size-4-1);
+}
+
+/* Header rows are display: contents so their child cells become the grid
+items of .usm-board-header (the rows exist in the DOM for structure but do
+not create grid tracks). */
+.usm-header-row--activity,
+.usm-header-row--task,
+.usm-header-row--epic {
+	display: contents;
+}
+
+/* Header cells (Activity / Task / Epic). Activity cells span their Task
+children's columns, Task cells span their Epic children's columns, and Epic
+cells are leaf columns (FR-005). Placement is driven by --usm-col /
+--usm-row (set by the renderer); auto-placement packs each row's cells
+left-to-right. */
+/* Header cells as accent-tinted cards (US9, Figma node 76:421, refactor-
+concept.md 7.1). The accent shades are derived via color-mix() over
+var(--interactive-accent) so light/dark themes adapt (no hard-coded colors,
+Principle I). */
+.usm-header-cell--activity,
+.usm-header-cell--task,
+.usm-header-cell--epic {
+	grid-column: var(--usm-col);
+	grid-row: var(--usm-row);
+	padding: var(--size-4-2) var(--size-4-3);
+	border: 1px solid color-mix(in oklch, var(--interactive-accent) 30%, var(--background-primary));
+	border-radius: var(--radius-m);
+	background-color: color-mix(in oklch, var(--interactive-accent) 8%, var(--background-primary));
+	color: var(--interactive-accent);
+	font-size: var(--font-small);
+	font-weight: var(--font-semibold);
+	text-align: left;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+/* Vertical stack of release sections (one per release row). */
+.usm-board-releases {
+	display: flex;
+	flex-direction: column;
+	gap: var(--size-4-2);
+	padding-top: var(--size-4-2);
+}
+
+/* One release section: a horizontal header row plus a grid of Epic leaf
+columns. The release header is NOT sticky (Iteration 2 decision) — only the
+column-header block sticks. */
+.usm-release {
+	display: flex;
+	flex-direction: column;
+	gap: var(--size-4-2);
+}
+
+/* Horizontal release header (US7, US8): a full-width row above the
+section's grid, with a top divider so sections are visually separated. */
+/* Release header (US9): a thin horizontal row (chevron + bold title) with a
+2px top divider and no background — the section sits on the board surface.
+Not sticky (Iteration 2 decision). */
+.usm-release-header {
+	display: flex;
+	align-items: center;
+	gap: var(--size-4-1);
+	padding: var(--size-4-1) 0;
+	border-top: 2px solid var(--background-modifier-border);
+}
+
+/* Release title (text node; wikilink-capable per FR-007). flex: 1 +
+min-width: 0 let it shrink and ellipsize next to the reserved chevron. */
+.usm-release-title {
+	flex: 1;
+	min-width: 0;
+	color: var(--text-normal);
+	font-size: var(--font-small);
+	font-weight: var(--font-semibold);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+/* Reserved release toggle (US10, FR-034): a visible chevron (per the Figma
+design) that is inert — no hover/focus affordances, no pointer cursor.
+Collapse/expand is a future feature; the button is its structural home. */
+.usm-release-toggle {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	flex: none;
+	width: 24px;
+	height: 24px;
+	padding: 0;
+	border: none;
+	background: none;
+	color: var(--text-normal);
+	cursor: default;
+}
+.usm-release-toggle:hover,
+.usm-release-toggle:focus,
+.usm-release-toggle:focus-visible {
+	color: var(--text-normal);
+	outline: none;
+}
+
+/* Reserved DnD handles and add/remove button slots (US10, FR-034):
+structurally present but invisible and inert. display: none keeps them out
+of the layout and out of the accessibility tree. */
+.usm-dnd-handle,
+.usm-add-remove-slot {
+	display: none;
+}
+
+/* Release section body: holds the section's grid. */
+.usm-release-body {
+	display: flex;
+	flex-direction: column;
+}
+
+/* One grid per release section. Uses the identical --usm-grid-cols template
+as the header block so columns align across the header and all sections by
+construction (R-18). */
+.usm-release-grid {
+	display: grid;
+	grid-template-columns: var(--usm-grid-cols);
+	gap: var(--size-4-1);
+	align-content: start;
+}
+
+/* One Epic leaf column within a release grid; holds the story cards for
+that column in this release (FR-008). */
+/* One Epic leaf column within a release grid; holds the story cards for
+that column in this release (FR-008). Rendered as a light rounded container
+(US9, Figma "Task Column") so the cards sit on a distinct surface. */
+.usm-epic-column {
+	grid-column: var(--usm-col);
+	display: flex;
+	flex-direction: column;
+	padding: var(--size-4-2);
+	border-radius: var(--radius-m);
+	background-color: var(--background-primary-alt);
+}
+
+/* Story cards stacked within an Epic column. */
+.usm-epic-column-cards {
+	display: flex;
+	flex-direction: column;
+	gap: var(--size-4-1);
+}
+
+/* Wikilink attribute header (FR-007): a header value that is a wikilink
+renders as a clickable, keyboard-accessible link that opens the linked
+note. Plain-text values keep the inert label styling above. */
+.usm-header-link {
+	cursor: pointer;
+	color: var(--link-color);
+}
+
+.usm-header-link:hover {
+	background-color: var(--background-modifier-hover);
+}
+
+.usm-header-link:focus-visible {
+	outline: 2px solid var(--interactive-accent);
+	outline-offset: -2px;
+}
+
+/* Story card (T015). Interactive card: clamped title, Release badge, and
+click / Enter / Space to open the linked note (FR-019). Keyboard accessible
+via tabindex + role=button (Constitution Principle IV). */
+.usm-story-card {
+	display: flex;
+	flex-direction: column;
+	gap: var(--size-4-1);
+	padding: var(--size-4-2);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-m);
+	background-color: var(--background-secondary);
+	cursor: pointer;
+}
+
+.usm-story-card:hover {
+	border-color: var(--interactive-accent);
+}
+
+.usm-story-card:focus-visible {
+	outline: 2px solid var(--interactive-accent);
+	outline-offset: -2px;
+}
+
+/* Card title: clamped to 3 lines (FR-009, T015). */
+.usm-story-card-header {
+	color: var(--text-normal);
+	font-size: var(--font-small);
+	font-weight: var(--font-medium);
+	display: -webkit-box;
+	-webkit-box-orient: vertical;
+	-webkit-line-clamp: 3;
+	overflow: hidden;
+}
+
+.usm-story-card-footer {
+	min-height: var(--size-4-1);
+}
+
+/* Release badge in the card footer (FR-010: Release value only in MVP). */
+.usm-story-card-badge {
+	display: inline-block;
+	padding: 2px var(--size-4-1);
+	border-radius: var(--radius-s);
+	background-color: var(--background-primary-alt);
+	color: var(--text-muted);
+	font-size: var(--font-smaller);
+}
+
+/* "Unassigned" section headers (T018, FR-011): visually distinguished
+from assigned headers with a dashed border and muted text so the dedicated
+catch-all column group / sub-column / row is immediately recognizable. */
+.usm-header-unassigned {
+	border-style: dashed;
+	color: var(--text-muted);
+}
+
+/* Broken-link placeholder card (T018, R-11): dimmed, inert, dashed border.
+Shows the link text as title plus a "Missing note" hint in the footer.
+No hover or focus affordances — there is no note to open. */
+.usm-story-card--broken {
+	opacity: 0.55;
+	cursor: default;
+	border-style: dashed;
+}
+
+.usm-story-card--broken:hover {
+	border-color: var(--background-modifier-border);
+}
+
+.usm-story-card-broken-hint {
+	color: var(--text-faint);
+	font-size: var(--font-smaller);
+	font-style: italic;
+}
+
+/* Read-only raw source view (markdown mode of the board view). */
+.usm-board-source {
+	margin: 0;
+	padding: var(--size-4-3);
+	color: var(--text-normal);
+	font-family: var(--font-monospace);
+	font-size: var(--font-smaller);
+	white-space: pre-wrap;
+	background-color: var(--background-primary);
+}
+
+/* Debug/dev metrics panel (T022, FR-020). A small overlay pinned to the
+bottom-right of the map view container. It is only present while debug
+mode is enabled and the map is rendered, so it never interferes with the
+map otherwise. Uses Obsidian CSS variables for theme adaptation
+(Constitution Principle I). */
+.usm-debug-panel {
+	position: absolute;
+	right: var(--size-4-2);
+	bottom: var(--size-4-2);
+	z-index: 10;
+	display: flex;
+	flex-direction: column;
+	gap: var(--size-4-1);
+	padding: var(--size-4-2) var(--size-4-3);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-m);
+	background-color: var(--background-secondary);
+	color: var(--text-muted);
+	font-family: var(--font-monospace);
+	font-size: var(--font-smaller);
+	pointer-events: none;
+	user-select: none;
+	-webkit-user-select: none;
+}
+
+.usm-debug-row {
+	display: flex;
+	justify-content: space-between;
+	gap: var(--size-4-3);
+}
+
+.usm-debug-label {
+	color: var(--text-faint);
+}
+
+.usm-debug-value {
+	color: var(--text-normal);
+	font-variant-numeric: tabular-nums;
+}
+
+/* ---------------------------------------------------------------------------
+Mobile-friendly sizing (Iteration 2, Constitution Principle IV).
+
+The grid geometry is driven by the --usm-col-w custom property (fixed width
+of each Epic leaf column), which the renderer references from the shared
+--usm-grid-cols template (board-renderer.ts). It is declared on the board
+root (.usm-board) with a desktop default so the stylesheet is the single
+source of truth for sizing; a media query below shrinks it on small screens
+so the map stays usable on phones/tablets (Q10) — fewer columns fit per
+screen, but the single scroll container still scrolls both axes and the
+sticky header block keeps working. No hard colors are introduced, so
+light/dark theme adaptation (Principle I) is preserved.
+--------------------------------------------------------------------------- */
+@media (max-width: 768px) {
+	.usm-board {
+		--usm-col-w: 160px;
+	}
+
+	/* Tighten the map padding and card spacing on small screens so more of
+	the map is visible without scrolling. */
+	.usm-board-map {
+		padding: var(--size-4-2);
+	}
+
+	.usm-board-header {
+		gap: var(--size-4-1);
+		/* Shrink the fixed column-header row height so the three header rows
+		take less vertical space. */
+		--usm-header-h: 24px;
+	}
+
+	/* SC-011: the release header occupies ≤ 32px of vertical space on mobile,
+	freeing horizontal space for the story columns. box-sizing keeps the
+	border-top inside the 32px cap. */
+	.usm-release-header {
+		max-height: 32px;
+		box-sizing: border-box;
+	}
+
+	.usm-story-card {
+		padding: var(--size-4-1);
+	}
+}

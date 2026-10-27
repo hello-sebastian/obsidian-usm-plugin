@@ -35,7 +35,7 @@
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T003 Implement `e2e/setup.mjs` (Node ESM, Node 22+, English comments): run `npm run build`, then copy `main.js`, `manifest.json`, and `styles.css` from the repository root into `test-vault/.obsidian/plugins/obsidian-usm-plugin/` (create directories as needed); verify each copied file's SHA-256 matches the source (abort non-zero on mismatch); print a summary (files copied, sizes, manifest version). Per contracts/test-vault-structure.md: `manifest.json` and `styles.css` are committed source files refreshed by setup; `main.js` is the gitignored build artifact
+- [X] T003 Implement `e2e/setup.mjs` (Node ESM, Node 22+, English comments): run `npm run build`, then copy `main.js`, `manifest.json`, and `styles.css` from the repository root into `test-vault/.obsidian/plugins/obsidian-usm-plugin/` (create directories as needed); verify each copied file's SHA-256 matches the source (abort non-zero on mismatch); print a summary (files copied, sizes, manifest version). Per contracts/test-vault-structure.md: `manifest.json` and `styles.css` are committed source files refreshed by setup; `main.js` is the gitignored build artifact
 
 **Checkpoint**: `npm run e2e:setup` produces a complete, hash-verified plugin installation in the test vault
 
