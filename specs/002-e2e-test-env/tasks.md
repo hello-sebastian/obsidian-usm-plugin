@@ -22,8 +22,8 @@
 
 **Purpose**: Repository-level scaffolding shared by all user stories
 
-- [ ] T001 Create the `e2e/` directory at the repository root and add npm scripts to `package.json`: `"e2e:setup": "node e2e/setup.mjs"`, `"e2e:launch": "node e2e/launch.mjs"`, `"e2e:verify": "node e2e/verify.mjs"`
-- [ ] T002 [P] Add to `.gitignore`: `test-vault/.obsidian/plugins/obsidian-usm-plugin/main.js` (build artifact — never committed) and `e2e/output/` (generated screenshots and reports)
+- [X] T001 Create the `e2e/` directory at the repository root and add npm scripts to `package.json`: `"e2e:setup": "node e2e/setup.mjs"`, `"e2e:launch": "node e2e/launch.mjs"`, `"e2e:verify": "node e2e/verify.mjs"`
+- [X] T002 [P] Add to `.gitignore`: `test-vault/.obsidian/plugins/obsidian-usm-plugin/main.js` (build artifact — never committed) and `e2e/output/` (generated screenshots and reports)
 
 **Checkpoint**: `e2e/` exists, npm scripts are registered, gitignore rules in place
 

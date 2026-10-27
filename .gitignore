@@ -15,6 +15,12 @@ main.js
 # Exclude sourcemaps
 *.map
 
+# E2E test environment (specs/002-e2e-test-env)
+# Build artifact installed into the test vault by `npm run e2e:setup` — never committed
+test-vault/.obsidian/plugins/obsidian-usm-plugin/main.js
+# Generated verification output (screenshots, JSON reports)
+e2e/output/
+
 # obsidian
 data.json
 
