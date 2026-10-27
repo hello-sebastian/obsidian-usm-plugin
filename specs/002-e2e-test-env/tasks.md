@@ -93,8 +93,8 @@
 
 **Purpose**: Documentation and end-to-end validation of the complete feature
 
-- [ ] T013 [P] Write `e2e/README.md` (English): prerequisites (macOS, Obsidian desktop, Node 22+), the three npm scripts and their options, the CDP endpoints, the output locations (`e2e/output/`), and a pointer to `specs/002-e2e-test-env/quickstart.md`
-- [ ] T014 Run the full quickstart.md validation sequence from a clean state: `npm run e2e:setup` → `npm run e2e:launch` (twice, to confirm idempotency) → `npm run e2e:verify` (expect `status: "pass"`, `taskColumns: 4`, `reactivity.delayMs <= 5000`, exit 0) → delete `test-vault/.obsidian/plugins/obsidian-usm-plugin/main.js` and re-run verify (expect exit 2 with the setup hint, SC-008) → confirm `git status` shows no untracked/modified files outside the committed fixture set (SC-002 isolation, FR-004 reproducibility)
+- [X] T013 [P] Write `e2e/README.md` (English): prerequisites (macOS, Obsidian desktop, Node 22+), the three npm scripts and their options, the CDP endpoints, the output locations (`e2e/output/`), and a pointer to `specs/002-e2e-test-env/quickstart.md`
+- [X] T014 Run the full quickstart.md validation sequence from a clean state: `npm run e2e:setup` → `npm run e2e:launch` (twice, to confirm idempotency) → `npm run e2e:verify` (expect `status: "pass"`, `taskColumns: 4`, `reactivity.delayMs <= 5000`, exit 0) → delete `test-vault/.obsidian/plugins/obsidian-usm-plugin/main.js` and re-run verify (expect exit 2 with the setup hint, SC-008) → confirm `git status` shows no untracked/modified files outside the committed fixture set (SC-002 isolation, FR-004 reproducibility)
 
 **Checkpoint**: Feature complete — all quickstart scenarios pass; documentation in place
 
