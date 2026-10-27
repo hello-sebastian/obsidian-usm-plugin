@@ -27,5 +27,12 @@ export default defineConfig({
 	test: {
 		include: ['tests/**/*.test.ts'],
 		environment: 'node',
+		// T018 (SC-014): the performance suite (T034) measures wall-clock DOM
+		// build time and is enforced against a 20% regression budget. Run test
+		// files sequentially so the perf suite never shares CPU with the other
+		// 12 files — parallel workers inflate its render time and made the
+		// budget check flaky under load (user decision 2026-10-27, option A).
+		// Suite cost is negligible (~6s → ~8s; the perf suite dominates).
+		fileParallelism: false,
 	},
 });
