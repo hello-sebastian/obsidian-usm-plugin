@@ -227,7 +227,7 @@ Task: "Add the reserved-element styles in styles.css"                  (T015)
 
 - After each task is implemented and verified, mark it `[X]` in this file IMMEDIATELY — batch checkoff is forbidden
 - Do not start task N+1 until task N is marked `[X]` (Sequencing Gate)
-- Commit the task's code changes together with its checkoff
+- Commit per phase, not per task: when the last task of a phase is checked off, commit the phase's code changes together with all of the phase's checkoffs in a single commit
 - After any interruption, re-read this file first and check off completed-but-unmarked tasks before starting new work
 
 ---
@@ -238,6 +238,6 @@ Task: "Add the reserved-element styles in styles.css"                  (T015)
 - [Story] label maps task to a specific user story for traceability
 - Each user story should be independently completable and testable
 - Verify tests fail before implementing (T002, T012)
-- Commit after each task or logical group
+- Commit per phase (one commit at each phase's checkpoint, after all of the phase's tasks are checked off)
 - Stop at any checkpoint to validate story independence
 - The domain layer (`src/domain/`), the Obsidian adapters (`src/obsidian/`), and the contracts (`contracts/`) are untouched — any task that would require changing them is out of scope and MUST be escalated (it would invalidate the SC-015 premise)

@@ -265,7 +265,7 @@ this.registerInterval(
 - When executing `/speckit-implement`, follow the **Logical Atomicity Protocol** (Constitution, *Task Breakdown & Execution Rules*):
   - After each task is implemented and verified, **immediately** mark it `[X]` in `tasks.md` — batch checkoff at the end of a session is forbidden.
   - Do **not** start task N+1 until task N is marked `[X]` (Sequencing Gate, constitution v1.6.3).
-  - Commit the task's code changes together with its `tasks.md` checkoff.
+  - Commit per phase, not per task: when the last task of a phase is checked off, commit the phase's code changes together with all of the phase's `tasks.md` checkoffs in a single commit.
   - After any interruption or context compaction, re-read `tasks.md` first and check off completed-but-unmarked tasks before starting new work.
 - The protocol is injected by the `usm.task-protocol` hook (`.specify/extensions.yml`) and defined in `.github/skills/usm-task-protocol/SKILL.md` (project-local — survives `speckit update`).
 

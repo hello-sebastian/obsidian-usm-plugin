@@ -1,11 +1,13 @@
 <!--
 Sync Impact Report (temporary — remove before committing)
 =========================================================
-Version change: 1.6.3 → 1.7.0 (MINOR)
+Version change: 1.7.0 → 1.8.0 (MINOR)
 
 Modified principles:
-- I. Compliance with the Obsidian ecosystem and view architecture
-  (added new bullet: "Official documentation as the source of truth")
+- Task Breakdown & Execution Rules (Logical Atomicity Protocol)
+  (Sequencing Gate: commit cadence changed from per-task to per-phase —
+   one commit per phase at its checkpoint, bundling the phase's code
+   changes and all of the phase's tasks.md checkoffs)
 
 Added sections: none
 Removed sections: none
@@ -126,7 +128,7 @@ This constitution governs the development, maintenance, and evolution of the **O
 - **Immediate Checkpointing & Progress Tracking:**
   - **Sequential Execution:** The agent executes tasks sequentially, step by step.
   - **Immediate Task Checkoff:** Immediately after successfully completing and verifying a task, the agent MUST edit `tasks.md` and change the task status from `` `[ ]` `` to `` `[x]` ``. Batch checkoff of tasks at the end of a session is forbidden.
-  - **Sequencing Gate (v1.6.3):** The agent MUST NOT begin task N+1 until task N is marked `[x]` in `tasks.md`. The checkoff and the task's code changes MUST land in the same commit, so the git history is an auditable per-task trail. After any session interruption or context compaction, the agent MUST re-read `tasks.md` and check off completed-but-unmarked tasks before starting new work.
+  - **Sequencing Gate (v1.6.3):** The agent MUST NOT begin task N+1 until task N is marked `[x]` in `tasks.md`. Commits are made **per phase, not per task**: when the last task of a phase is completed and checked off, the agent MUST commit the phase's code changes together with all of the phase's `tasks.md` checkoffs in a single commit, so the git history is an auditable per-phase trail. After any session interruption or context compaction, the agent MUST re-read `tasks.md` and check off completed-but-unmarked tasks before starting new work.
 
 ## Governance
 
@@ -135,4 +137,4 @@ This constitution governs the development, maintenance, and evolution of the **O
 - **Versioning policy:** The constitution version follows semantic versioning (MAJOR.MINOR.PATCH). MAJOR: backward-incompatible removal or redefinition of a principle. MINOR: a new principle/section added or materially expanded guidance. PATCH: clarifications, wording, or typo fixes.
 - **Compliance review:** A constitution compliance review is a mandatory checkpoint when accepting a PR and before releasing any production version.
 
-**Version**: 1.7.0 | **Ratified**: 2026-10-14 | **Last Amended**: 2026-10-24
+**Version**: 1.8.0 | **Ratified**: 2026-10-14 | **Last Amended**: 2026-10-27

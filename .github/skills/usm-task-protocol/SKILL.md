@@ -25,8 +25,10 @@ For **each** task in `tasks.md`, in this exact order:
    (Constitution: *Self-Contained & Compilable*).
 3. **Check off IMMEDIATELY** — edit `tasks.md` and change that task's
    `[ ]` to `[X]`. Do not defer this to the end of the session.
-4. **Commit** — commit the task's code changes **together with** the
-   `tasks.md` checkoff, so the git history is an auditable per-task trail.
+4. **Commit at phase end** — do NOT commit after each task. Only when the
+   LAST task of the current phase is checked off, commit the phase's code
+   changes **together with** all of the phase's `tasks.md` checkoffs in a
+   single commit, so the git history is an auditable per-phase trail.
 5. **Report** — one line: `T0XX done — <summary> (tests: n/n)`.
 
 ### Hard gates
@@ -35,8 +37,9 @@ For **each** task in `tasks.md`, in this exact order:
   (Constitution: *Sequencing Gate*).
 - **Batch checkoff** of multiple tasks in a single edit is **FORBIDDEN**
   (Constitution: *Immediate Task Checkoff*).
-- Parallel tasks `[P]` may be implemented together, but each still gets its
-  own checkoff + commit as soon as it is verified.
+- Parallel tasks `[P]` may be implemented together, and each still gets its
+  own checkoff as soon as it is verified; the commit still happens once, at
+  the end of the phase.
 
 ### After an interruption or context compaction
 
