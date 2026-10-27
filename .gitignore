@@ -18,6 +18,13 @@ main.js
 # E2E test environment (specs/002-e2e-test-env)
 # Build artifact installed into the test vault by `npm run e2e:setup` — never committed
 test-vault/.obsidian/plugins/obsidian-usm-plugin/main.js
+# Obsidian runtime/working files created when the test vault is opened — never committed
+test-vault/.obsidian/app.json
+test-vault/.obsidian/appearance.json
+test-vault/.obsidian/core-plugins.json
+test-vault/.obsidian/workspace.json
+test-vault/.obsidian/hotkeys.json
+test-vault/.obsidian/graph.json
 # Generated verification output (screenshots, JSON reports)
 e2e/output/
 
