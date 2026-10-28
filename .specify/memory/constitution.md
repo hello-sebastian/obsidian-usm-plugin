@@ -1,19 +1,3 @@
-<!--
-Sync Impact Report (temporary — remove before committing)
-=========================================================
-Version change: 1.7.0 → 1.8.0 (MINOR)
-
-Modified principles:
-- Task Breakdown & Execution Rules (Logical Atomicity Protocol)
-  (Sequencing Gate: commit cadence changed from per-task to per-phase —
-   one commit per phase at its checkpoint, bundling the phase's code
-   changes and all of the phase's tasks.md checkoffs)
-
-Added sections: none
-Removed sections: none
-Follow-up TODOs: none
--->
-
 # Obsidian User Story Map Plugin Constitution
 
 This constitution governs the development, maintenance, and evolution of the **Obsidian User Story Map** plugin, distributed as an Obsidian Community Plugin via GitHub Releases and the official Obsidian catalog. The document defines the supreme, immutable architectural, quality, and security principles.
