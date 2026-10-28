@@ -22,5 +22,5 @@
 
 ## Result
 
-- [ ] All scenarios pass → mark the driving tasks `[X]` in `tasks.md`.
+- [x] All scenarios pass → mark the driving tasks `[X]` in `tasks.md`.
 - [ ] Any failure → record it here, fix, and re-run the affected scenario.

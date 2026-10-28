@@ -44,6 +44,36 @@ npm run e2e:launch    # opens a debuggable instance on the test vault
 npm run e2e:verify    # runs the checks, writes the report
 ```
 
+## Ad-hoc inspection (`e2e/inspect.mjs`)
+
+`e2e/inspect.mjs` is a deterministic CLI for inspecting and driving the running
+instance (Node 22+ built-ins only, reuses [`cdp.mjs`](./cdp.mjs)). It is the
+canonical way to perform ad-hoc checks and interactions.
+
+```bash
+node e2e/inspect.mjs <operation> [args] [--port <number>]
+# or: npm run e2e:inspect -- <operation> [args] [--port <number>]
+```
+
+| Operation | What it does | Output |
+|-----------|--------------|--------|
+| `eval <expression>` | Evaluates JS in the page context | the value as one-line JSON on stdout |
+| `wait <css-selector> [--timeout <ms>]` | Polls until the selector matches (default `15000` ms, `200` ms poll) | `ok: <selector> found` |
+| `screenshot <path>` | Captures a PNG (parent directories created) | the written path |
+
+`--port` is accepted by every operation (default `9222`, integer `1–65535`).
+Exit codes: `0` = success, `1` = operation failed (wait timeout, page
+evaluation exception), `2` = environment error before the operation ran (no CDP
+instance on the port, invalid arguments). Every environment error includes the
+hint `(run npm run e2e:launch)`.
+
+The full workflow — environment preparation, standard checks, ad-hoc
+inspection, the manual-assist protocol, mobile emulation, and on-demand
+preview — is documented in the
+[`usm-e2e` skill](../.github/skills/usm-e2e/SKILL.md). The runnable end-to-end
+scenarios are in
+[`specs/003-manual-test-workflow/quickstart.md`](../specs/003-manual-test-workflow/quickstart.md).
+
 ## CDP endpoints
 
 Once `e2e:launch` succeeds, the instance serves (FR-009):
