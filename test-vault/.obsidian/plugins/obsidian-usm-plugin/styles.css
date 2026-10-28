@@ -18,7 +18,10 @@ view so no mutation actions are offered. */
 	width: 100%;
 	height: 100%;
 	overflow: auto;
-	padding: var(--size-4-3);
+	/* No top padding: the sticky column-header block sits flush with the
+	top edge (top: 0) with an opaque background, so no content strip shows
+	through above it while scrolling (Q15 part 1, user review). */
+	padding: 0 var(--size-4-3) var(--size-4-3);
 	background-color: var(--background-primary);
 	user-select: none;
 	-webkit-user-select: none;
@@ -67,9 +70,12 @@ items and span their children's columns via --usm-col (FR-005). */
 	grid-template-rows: repeat(3, var(--usm-header-h));
 	gap: var(--size-4-1);
 	/* Opaque background so release content does not show through the grid
-	gaps while scrolling. */
+	gaps while scrolling. No top padding: the sticky block sits flush with
+	the top edge (top: 0) and its opaque background covers the full top
+	edge, so no content strip shows through above it while scrolling
+	(Q15 part 1, user review). */
 	background-color: var(--background-primary);
-	padding: var(--size-4-1);
+	padding: 0 var(--size-4-1) var(--size-4-1);
 }
 
 /* Header rows are display: contents so their child cells become the grid
@@ -95,14 +101,23 @@ Principle I). */
 .usm-header-cell--epic {
 	grid-column: var(--usm-col);
 	grid-row: var(--usm-row);
-	padding: var(--size-4-2) var(--size-4-3);
+	display: flex;
+	align-items: center;
+	padding: 0 var(--size-4-3);
 	border: 1px solid color-mix(in oklch, var(--interactive-accent) 30%, var(--background-primary));
 	border-radius: var(--radius-m);
 	background-color: color-mix(in oklch, var(--interactive-accent) 8%, var(--background-primary));
 	color: var(--interactive-accent);
 	font-size: var(--font-small);
 	font-weight: var(--font-semibold);
-	text-align: left;
+}
+
+/* Header label (Activity / Task / Epic / Release): the text node wrapped
+in a span so the parent can be a flex container (vertical centering) while
+the span carries the ellipsis clipping (Q15 part 1, user review). */
+.usm-header-label {
+	display: block;
+	min-width: 0;
 	white-space: nowrap;
 	overflow: hidden;
 	text-overflow: ellipsis;
@@ -135,7 +150,20 @@ Not sticky (Iteration 2 decision). */
 	align-items: center;
 	gap: var(--size-4-1);
 	padding: var(--size-4-1) 0;
-	border-top: 2px solid var(--background-modifier-border);
+	/* Thin 1px divider between release sections (Q15 part 1, user review:
+	2px read as too heavy). */
+	border-top: 1px solid var(--background-modifier-border);
+}
+
+/* "Unassigned" release section header (FR-011): a dashed top divider and a
+muted title distinguish the catch-all section. The modifier lives on the
+header (not the title) so the title does not inherit a full-box dashed
+border (Q15 part 1, user review). */
+.usm-release-header--unassigned {
+	border-top-style: dashed;
+}
+.usm-release-header--unassigned .usm-release-title {
+	color: var(--text-muted);
 }
 
 /* Release title (text node; wikilink-capable per FR-007). flex: 1 +
@@ -146,9 +174,6 @@ min-width: 0 let it shrink and ellipsize next to the reserved chevron. */
 	color: var(--text-normal);
 	font-size: var(--font-small);
 	font-weight: var(--font-semibold);
-	white-space: nowrap;
-	overflow: hidden;
-	text-overflow: ellipsis;
 }
 
 /* Reserved release toggle (US10, FR-034): a visible chevron (per the Figma
@@ -381,9 +406,10 @@ light/dark theme adaptation (Principle I) is preserved.
 	}
 
 	/* Tighten the map padding and card spacing on small screens so more of
-	the map is visible without scrolling. */
+	the map is visible without scrolling. No top padding (the sticky header
+	owns the top offset, see .usm-board-map). */
 	.usm-board-map {
-		padding: var(--size-4-2);
+		padding: 0 var(--size-4-2) var(--size-4-2);
 	}
 
 	.usm-board-header {
