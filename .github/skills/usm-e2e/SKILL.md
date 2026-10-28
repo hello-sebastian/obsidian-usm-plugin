@@ -61,6 +61,70 @@ npm run e2e:verify
 - Exit codes: `0` = pass, `1` = one or more checks failed, `2` = environment
   error before checks ran (CDP unreachable, build missing/outdated).
 
+## Ad-hoc inspection
+
+`e2e/inspect.mjs` is a deterministic, committed CLI for inspecting and driving
+the running instance (Node 22+ built-ins only, reuses `e2e/cdp.mjs`). It is the
+canonical way to perform ad-hoc checks and interactions.
+
+```bash
+node e2e/inspect.mjs <operation> [args] [--port <number>]
+# or: npm run e2e:inspect -- <operation> [args] [--port <number>]
+```
+
+| Operation | What it does | Output |
+|-----------|--------------|--------|
+| `eval <expression>` | Evaluates JS in the page context | the value as one-line JSON on stdout |
+| `wait <css-selector> [--timeout <ms>]` | Polls until the selector matches (default `15000` ms, `200` ms poll) | `ok: <selector> found` |
+| `screenshot <path>` | Captures a PNG (parent directories created) | the written path |
+
+`--port` is accepted by every operation (default `9222`, integer 1–65535).
+Exit codes: `0` = success, `1` = operation failed (wait timeout, page
+evaluation exception), `2` = environment error before the operation ran (no
+CDP instance on the port, invalid arguments). Every environment error includes
+the hint `(run npm run e2e:launch)`.
+
+### Documented interaction expressions
+
+`eval` is also the **interaction channel** — navigation, view switching,
+clicks, typing, and mobile emulation are performed by evaluating these
+documented expressions:
+
+| Purpose | Expression |
+|---------|------------|
+| Open a note (vault-relative path) | `location.href = 'obsidian://open?path=<path>'` |
+| Reload the page | `location.reload()` |
+| Switch to the map view (fallback when the view is edit/preview) | click `button[aria-label="Change view"]`, then the `.menu-item` labeled "USM board" (the same two-step sequence `e2e/verify.mjs` uses) |
+| Enable mobile emulation | `this.app.emulateMobile(true)` |
+| Disable mobile emulation (restore) | `this.app.emulateMobile(false)` |
+| Toggle mobile emulation | `this.app.emulateMobile(!this.app.isMobile)` |
+| Check the mobile flag | `this.app.isMobile` |
+| Click an element by selector | `document.querySelector('<selector>').click()` |
+| Type into an element by selector | `document.querySelector('<selector>').value = '<text>'` (followed by a dispatched `input` event where needed) |
+
+### Mobile scenarios (emulation sequence)
+
+Mobile scenarios run on the same desktop instance via Obsidian's built-in
+mobile emulation — no physical device is needed. The documented sequence is
+mandatory (the docs do not guarantee an immediate re-render, so a reload is
+required after toggling):
+
+```bash
+node e2e/inspect.mjs eval "this.app.emulateMobile(true)"
+node e2e/inspect.mjs eval "location.reload()"
+node e2e/inspect.mjs wait ".usm-board"
+node e2e/inspect.mjs screenshot e2e/output/mobile-emulated.png
+# inspect the screenshot: compact release header, full-width columns, both-axis scroll
+node e2e/inspect.mjs eval "this.app.emulateMobile(false)"
+node e2e/inspect.mjs eval "location.reload()"
+node e2e/inspect.mjs wait ".usm-board"
+node e2e/inspect.mjs eval "this.app.isMobile"   # → false
+```
+
+The **restore step (disable + reload) is mandatory** after any mobile
+scenario — otherwise the emulated state leaks into later checks. Relaunching
+the instance also resets it.
+
 ## The manual-assist protocol
 
 Some verification scenarios cannot be judged by the agent alone. Classify each
