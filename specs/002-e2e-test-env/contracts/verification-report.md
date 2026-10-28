@@ -68,7 +68,11 @@ npm run e2e:verify -- --port 9333  # alternate port
 
 - `0` — `status: "pass"`.
 - `1` — `status: "fail"` (one or more checks failed).
-- `2` — environment error before checks ran (CDP unreachable, build missing/outdated). `status` is `"fail"` and `errors` explains why.
+- `2` — environment error before checks ran (CDP unreachable, build missing/outdated, single-board precondition violated). `status` is `"fail"` and `errors` explains why.
+
+## Preconditions
+
+- **Single board**: the standard checks use global DOM queries and are only correct when exactly one `.usm-board` is present in the DOM. If multiple boards are open, the run exits `2` with a "single-board precondition violated" message in `errors` (T015).
 
 ## Interpretability (FR-014)
 

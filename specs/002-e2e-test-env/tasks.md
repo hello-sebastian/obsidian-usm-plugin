@@ -129,3 +129,15 @@
 2. **Incremental delivery**: add US-02 (launch), then US-03 (verification), each as a complete, independently testable increment with its own checkpoint.
 3. **Validate at every checkpoint**: use the quickstart.md scenarios for the story just completed; finish with the full Phase 6 validation run.
 4. **Never test a broken build**: the pre-flight checks (T008, T010) guarantee SC-008 at every entry point.
+
+---
+
+## Phase 7: Convergence
+
+**Purpose**: Close robustness gaps found by the 2026-10-28 convergence assessment (feature 003 runtime findings exposed weaknesses in the 002 tooling). All three findings are `partial` / MEDIUM — the base scenarios work, but the tooling and contracts do not reflect the lessons learned in practice.
+
+- [X] T015 Scope the standard checks in `e2e/verify.mjs` to the board it opened (FR-011, SC-004, partial): `checkTaskColumns` and `checkReactivity` currently use global `document.querySelectorAll` calls that sum **every** open board — with a second board open (e.g. `test-vault/boards/Test Board 2.md` from feature 003) the run reports `taskColumns: 6` and a false reactivity failure. Either scope the queries to the `.usm-board` element that `openBoardInMapView` opened (e.g. via a marker or the active leaf's view container), or detect multiple `.usm-board` elements and fail with a clear "single-board precondition" message in `errors` (exit 2). Update `contracts/verification-report.md` with the single-board precondition.
+- [X] T016 Make `e2e/launch.mjs` recover from an alive-but-windowless instance (FR-007, SC-007, partial): the idempotency probe checks only the port (`/json/version`), so when Obsidian is alive in the background with no window, launch prints "Instance already available" and exits 0 **without opening a window** — the subsequent `e2e:verify` then fails with "No CDP page targets". When the port responds but `listTargets` returns no page targets, open the test vault window (`open -a Obsidian <absolute test-vault path>`) and continue the readiness poll instead of exiting 0. Document this edge case in `contracts/launch-cli.md` (Behavior step 2).
+- [X] T017 Replace the URI navigation in `e2e/verify.mjs` with the reliable API open-note method (FR-010, partial): `openBoardInMapView` uses `location.href = 'obsidian://open?path=Board.md'`, which is intermittently rejected ("Vault not found"). Use the API method documented in the `usm-e2e` skill — `app.workspace.getLeaf(true).openFile(app.vault.getAbstractFileByPath('Board.md'))` — via `evaluate`, keeping the URI form (or the view-switch fallback) only as a secondary fallback.
+
+**Checkpoint**: `e2e:verify` reports the baseline (`taskColumns: 4`) with multiple boards open or fails with a clear single-board message; `e2e:launch` always leaves a visible, connectable window on the test vault; board opening no longer depends on the flaky URI scheme. Contracts updated in the same change.

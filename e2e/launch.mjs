@@ -32,6 +32,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import net from 'node:net';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { listTargets } from './cdp.mjs';
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const PLUGIN_ID = 'obsidian-usm-plugin';
@@ -140,6 +141,22 @@ async function waitForReady(port) {
 	return null;
 }
 
+/**
+ * Bounded poll for a CDP page target to appear (windowless recovery, T016).
+ * Returns true when at least one page target is listed, else false.
+ */
+async function waitForPageTarget(port) {
+	const deadline = Date.now() + READINESS_TIMEOUT_MS;
+	while (Date.now() < deadline) {
+		const targets = await listTargets(port);
+		if (targets.length > 0) {
+			return true;
+		}
+		await new Promise((r) => setTimeout(r, READINESS_POLL_MS));
+	}
+	return false;
+}
+
 const port = parsePort(process.argv.slice(2));
 
 // Step 1: pre-flight build check (FR-015, SC-008).
@@ -149,8 +166,29 @@ console.log(`✔ Plugin build current in the test vault (version ${version}).`);
 // Step 2: idempotency probe (FR-007, SC-007).
 const existing = await probeCdp(port);
 if (isCdpInfo(existing)) {
-	console.log(`Instance already available on port ${port}`);
-	process.exit(0);
+	const targets = await listTargets(port);
+	if (targets.length > 0) {
+		console.log(`Instance already available on port ${port}`);
+		process.exit(0);
+	}
+	// Alive but windowless (T016): the app is running in the background with
+	// no window, so there are no page targets to attach to. Open the test
+	// vault window, then wait for a page target to appear instead of exiting 0.
+	console.log(`→ Instance alive on port ${port} but no window — opening the test vault…`);
+	const open = spawnSync('open', ['-a', 'Obsidian', TEST_VAULT], { stdio: 'inherit' });
+	if (open.status !== 0) {
+		fail(`open exited with code ${open.status ?? 'unknown'} — could not open the test vault window.`);
+	}
+	const targetReady = await waitForPageTarget(port);
+	if (targetReady) {
+		console.log(`✔ Test vault window available on port ${port}.`);
+		console.log(`  http://127.0.0.1:${port}/json/version`);
+		process.exit(0);
+	}
+	fail(
+		`Opened the test vault but no CDP page target appeared on port ${port} ` +
+			`within ${READINESS_TIMEOUT_MS / 1000} s.`,
+	);
 }
 
 // Step 3: launch Obsidian on the test vault (FR-006).

@@ -117,19 +117,37 @@ async function waitForSelector(session, selector, timeoutMs) {
 /**
  * Open the board in map view (FR-010).
  *
- * Navigates the page to the `Board.md` note via the `obsidian://` URI scheme.
- * The plugin's routing (`usm-view: map` frontmatter) then renders the board
- * in map view. If the board does not appear (the view may be edit/preview),
- * falls back to clicking the dedicated view-switch control
+ * Opens the `Board.md` note via the Obsidian API
+ * (`app.workspace.getLeaf(true).openFile(app.vault.getAbstractFileByPath('Board.md'))`)
+ * — the reliable method documented in the `usm-e2e` skill (T017). The
+ * `obsidian://open?path=…` URI form is intermittently rejected ("Vault not
+ * found") and is kept only as a secondary fallback. The plugin's routing
+ * (`usm-view: map` frontmatter) then renders the board in map view. If the
+ * board does not appear (the view may be edit/preview), falls back to clicking
+ * the dedicated view-switch control
  * (`button[aria-label="Change view"]` → menu item "USM board").
  *
  * Throws when `.usm-board` is not present after the bounded wait.
  */
 async function openBoardInMapView(session) {
-	// Navigate to the board note. The path is vault-relative.
-	await session.evaluate(`location.href = 'obsidian://open?path=Board.md'`);
+	// Primary: open the board note via the Obsidian API (reliable, T017).
+	// The path is vault-relative. `openFile` is async — `evaluate` awaits it.
+	await session.evaluate(`
+		(() => {
+			const file = app.vault.getAbstractFileByPath('Board.md');
+			if (!file) { return 'file-not-found'; }
+			app.workspace.getLeaf(true).openFile(file);
+			return 'ok';
+		})()
+	`);
 
 	// Wait for the board to render in map view.
+	if (await waitForSelector(session, '.usm-board', BOARD_WAIT_MS)) {
+		return;
+	}
+
+	// Secondary fallback: the `obsidian://` URI scheme (intermittently rejected).
+	await session.evaluate(`location.href = 'obsidian://open?path=Board.md'`);
 	if (await waitForSelector(session, '.usm-board', BOARD_WAIT_MS)) {
 		return;
 	}
@@ -162,6 +180,32 @@ async function openBoardInMapView(session) {
 		'The board did not render in map view — expected .usm-board in the DOM ' +
 			'after opening Board.md (and switching to the "USM board" view).',
 	);
+}
+
+/**
+ * Single-board precondition (T015, FR-011, SC-004).
+ *
+ * The standard checks use global `document.querySelectorAll` calls. They are
+ * only correct when exactly one `.usm-board` is present in the DOM. With
+ * multiple boards open (e.g. a second board from feature 003), the counts
+ * would sum across all boards and produce false failures.
+ *
+ * Throws when zero or more than one `.usm-board` is found.
+ */
+async function assertSingleBoard(session) {
+	const count = await session.evaluate(
+		`document.querySelectorAll('.usm-board').length`,
+	);
+	if (count === 0) {
+		throw new Error('No .usm-board element found in the DOM.');
+	}
+	if (count > 1) {
+		throw new Error(
+			`Single-board precondition violated: ${count} .usm-board elements found. ` +
+				'e2e:verify standard checks use global DOM queries and are only correct ' +
+				'with exactly one board open. Close the other board(s) and re-run.',
+		);
+	}
 }
 
 /** Build a failed check object (used when a check throws). */
@@ -349,6 +393,15 @@ async function main() {
 	}
 
 	console.log('✔ Board opened in map view (.usm-board present).');
+
+	// Single-board precondition (T015): the standard checks use global DOM
+	// queries; they are only correct with exactly one .usm-board in the DOM.
+	try {
+		await assertSingleBoard(session);
+	} catch (err) {
+		session.close();
+		emitEnvError(port, err.message);
+	}
 
 	// Run the standard checks (T011) and collect the top-level report fields.
 	const checks = [];
