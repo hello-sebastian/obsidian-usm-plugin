@@ -85,6 +85,11 @@ npm run build
     ```
 - Reload Obsidian and enable the plugin in **Settings → Community plugins**.
 
+## Manual / E2E verification
+
+- Manual/E2E verification of the plugin runs against the committed `test-vault/` in a real Obsidian instance — follow the `usm-e2e` skill (`.github/skills/usm-e2e/SKILL.md`) for environment preparation, standard checks, ad-hoc inspection, the manual-assist protocol, mobile emulation, and on-demand preview.
+- Manual-test tasks in future iterations MUST follow the convention in `specs/003-manual-test-workflow/contracts/task-convention.md`: reference the `usm-e2e` skill by name, name the checklist file and scenario to update, mark the scenario mode (automatable / subjective / live interaction), and target the test vault (never the private vault or the `deploy` path).
+
 ## Commands & settings
 
 - Any user-facing commands should be added via `this.addCommand(...)`.

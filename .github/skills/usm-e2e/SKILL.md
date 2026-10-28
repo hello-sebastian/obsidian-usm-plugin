@@ -61,6 +61,36 @@ npm run e2e:verify
 - Exit codes: `0` = pass, `1` = one or more checks failed, `2` = environment
   error before checks ran (CDP unreachable, build missing/outdated).
 
+## Test vault fixtures
+
+The committed `test-vault/` holds two boards that coexist and each render its
+own structure independently (FR-009):
+
+- **`Board.md`** (root) — the `002` standard-verify target: `taskColumns: 4`,
+  8 cards. Unchanged by this feature.
+- **`boards/Test Board 2.md`** — the extended board fixture, with its story
+  notes `boards/T1.md`–`T8.md` (names distinct from the root `S1`–`S6` so the
+  two boards never share notes). It renders 4 release sections (Unassigned
+  first, then `1.0 MVP`, `2.0`, `3.0`), 9 cards (8 notes + 1 duplicate `T1`),
+  6 task columns, 4 activity columns, and a long epic title that clamps within
+  the fixed column width. See
+  `specs/003-manual-test-workflow/contracts/extended-board-baseline.md` for the
+  full baseline and the per-leaf measurement method.
+
+**Multi-board coexistence.** With both boards present, opening each in turn
+(and switching back and forth) reproduces its own baseline with no cross-board
+interference. Because both boards can be open at once, measure each board
+within its own leaf (e.g. `app.workspace.getLeavesOfType('usm-board-view')`),
+not with a global `document.querySelectorAll` count, which sums every open
+board.
+
+**Same-folder arrangement (ad-hoc).** The committed vault uses the
+separate-folder arrangement. To verify the same-folder arrangement ad-hoc:
+create a variant board file in the vault root (distinct name, e.g.
+`Board variant.md`, referencing the `T` notes or a small new set), verify it
+renders independently alongside `Board.md`, delete it, and restore a clean
+tree. This step is not a committed fixture.
+
 ## Ad-hoc inspection
 
 `e2e/inspect.mjs` is a deterministic, committed CLI for inspecting and driving
