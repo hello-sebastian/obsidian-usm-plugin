@@ -103,9 +103,12 @@ long epic title). Standard `e2e:verify` sanity pass on `Board.md`:
       Observation: at a 375 px viewport — release header 32 px, `--usm-col-w`
       160 px, header block sticky, scroll container `overflow: auto` on both
       axes. Note: `emulateMobile(true)` alone sets Obsidian's mobile flag but
-      does not resize the viewport, so the `@media (max-width: 768px)` CSS was
-      exercised by forcing a 375 px viewport via CDP
-      `Emulation.setDeviceMetricsOverride` (throwaway script, gitignored).
+      does not resize the viewport, so the `@media (max-width: 768px)` CSS is
+      exercised by the committed viewport override applied within the same
+      connection as the capture/assertion
+      (`e2e/inspect.mjs screenshot … --viewport 375x667 --mobile`, CDP
+      `Emulation.setDeviceMetricsOverride`) — see the `usm-e2e` skill's mobile
+      sequence (bug `emulate-mobile-viewport-gap`, fixed 2026-10-28).
 - [x] **Q15 part 2** — Reserved DOM present and inert: every release header has
       a visible but inert chevron toggle; drag handles and add/remove slots are
       present but invisible; no interaction triggers collapse, drag-and-drop, or

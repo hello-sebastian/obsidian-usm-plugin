@@ -14,6 +14,8 @@
  *                          expose:
  *                            evaluate(expression)  (Runtime.evaluate, returnByValue)
  *                            screenshot(filePath)  (Page.captureScreenshot → PNG)
+ *                            setViewport(w, h, scale, mobile)  (Emulation.setDeviceMetricsOverride)
+ *                            clearViewport()         (Emulation.clearDeviceMetricsOverride)
  *                            close()
  *
  * Every failure rejects with a diagnostic message that includes a
@@ -227,6 +229,27 @@ export async function connect(port) {
 		return filePath;
 	}
 
+	/**
+	 * Override the device viewport (Emulation.setDeviceMetricsOverride).
+	 * The override is session-scoped: it is visible target-wide while the
+	 * setting connection is open, and is cleared when that connection closes
+	 * or clearViewport() is called. It survives page reloads as long as the
+	 * setting connection stays open.
+	 */
+	async function setViewport(width, height, deviceScaleFactor = 1, mobile = false) {
+		await send('Emulation.setDeviceMetricsOverride', {
+			width,
+			height,
+			deviceScaleFactor,
+			mobile,
+		});
+	}
+
+	/** Clear any active device metrics override (Emulation.clearDeviceMetricsOverride). */
+	async function clearViewport() {
+		await send('Emulation.clearDeviceMetricsOverride');
+	}
+
 	/** Close the WebSocket (idempotent). */
 	function close() {
 		closedByUs = true;
@@ -237,5 +260,5 @@ export async function connect(port) {
 		}
 	}
 
-	return { evaluate, screenshot, close, target };
+	return { evaluate, screenshot, setViewport, clearViewport, close, target };
 }

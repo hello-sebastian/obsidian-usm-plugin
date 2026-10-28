@@ -20,7 +20,7 @@ An invalid `--port` value exits `2` with a clear message.
 
 ## Operations
 
-### `eval <expression>`
+### `eval <expression> [--viewport <WxH>] [--mobile] [--scale N]`
 
 Evaluates a JavaScript expression in the page context of the first CDP page
 target and prints the result to stdout as JSON (one line).
@@ -28,6 +28,8 @@ target and prints the result to stdout as JSON (one line).
 ```bash
 node e2e/inspect.mjs eval "document.querySelectorAll('.usm-story-card').length"
 # → 8
+node e2e/inspect.mjs eval "window.innerWidth" --viewport 375x667 --mobile
+# → 375
 ```
 
 - The expression is passed to CDP `Runtime.evaluate` with
@@ -37,6 +39,11 @@ node e2e/inspect.mjs eval "document.querySelectorAll('.usm-story-card').length"
 - `eval` is also the **interaction channel**: navigation, view switching,
   clicks, typing, and mobile emulation are performed by evaluating documented
   expressions (see "Documented interaction expressions" below).
+- `--viewport <WxH>` (with optional `--mobile`, `--scale <N>`) applies a
+  device-metrics override **for the duration of the call only** — set before
+  the evaluation, cleared after (see the `viewport` operation for the
+  session-scoping rationale). This is the reliable way to assert the
+  plugin's viewport-based mobile layout.
 
 ### `wait <css-selector> [--timeout <ms>]`
 
@@ -54,18 +61,49 @@ node e2e/inspect.mjs wait ".usm-release" --timeout 30000
 - Timeout: prints `timeout: <selector> not found within <ms> ms` to stderr
   and exits `1`.
 
-### `screenshot <path>`
+### `screenshot <path> [--viewport <WxH>] [--mobile] [--scale N]`
 
 Captures a PNG screenshot of the page and writes it to `<path>` (parent
 directories are created as needed).
 
 ```bash
 node e2e/inspect.mjs screenshot e2e/output/board.png
+node e2e/inspect.mjs screenshot e2e/output/mobile-emulated.png --viewport 375x667 --mobile
 node e2e/inspect.mjs screenshot specs/002-e2e-test-env/checklists/M3-mobile-layout.png
 ```
 
 - Prints the written path and exits `0`.
 - The path is relative to the repository root (or absolute).
+- `--viewport <WxH>` (with optional `--mobile`, `--scale <N>`) applies a
+  device-metrics override **for the duration of the capture only** — set
+  before the screenshot, cleared after. This is the reliable way to capture
+  the plugin's viewport-based mobile layout.
+
+### `viewport <WxH> [--scale N] [--mobile]` / `viewport reset`
+
+Overrides the device viewport via CDP `Emulation.setDeviceMetricsOverride`
+(or clears the override with `viewport reset`, via
+`Emulation.clearDeviceMetricsOverride`).
+
+```bash
+node e2e/inspect.mjs viewport 375x667 --mobile
+node e2e/inspect.mjs viewport 375x667 --scale 2
+node e2e/inspect.mjs viewport reset
+```
+
+- `<WxH>` is two positive integers joined by `x` (e.g. `375x667`); any other
+  form exits `2`.
+- `--scale <N>` sets `deviceScaleFactor` (default `1`, positive number);
+  `--mobile` sets the `mobile` flag (default `false`).
+- **Session scoping (live-verified 2026-10-28, Obsidian 1.14.5 / Chrome 150):**
+  the override is visible target-wide **only while the connection that set it
+  is open**; it is cleared when that connection closes (or by `viewport
+  reset`). It survives page reloads as long as the setting connection stays
+  open. Consequently, a standalone `viewport` call (connect → set → close)
+  **cannot hold the override for a later, separate call** — use the
+  `--viewport` flag on `eval`/`screenshot` (same connection) to capture or
+  assert the mobile layout. The standalone operation remains for diagnostics.
+- Prints a one-line result and exits `0`; a CDP command error exits `1`.
 
 ## Exit codes
 
@@ -99,9 +137,16 @@ The URI form `location.href = 'obsidian://open?path=<path>'` is intermittently
 rejected by Obsidian's vault resolver ("Vault not found"); the API method
 above is the reliable open-note expression.
 
-Mobile emulation MUST be followed by a page reload for the mobile layout to
-apply, and the restore step (disable + reload) is mandatory after any mobile
-scenario (research R-003-4; spec edge case: mobile emulation state leak).
+Mobile emulation is two independent mechanisms: `emulateMobile(true)`
+switches Obsidian's mobile UI mode (flag + body classes) and MUST be followed
+by a page reload for the UI mode to apply; the **viewport override** is what
+applies the plugin's viewport-based mobile layout (`@media (max-width: 768px)`).
+Because the override is session-scoped (cleared when the setting connection
+closes), it MUST be applied **within the same connection as the action** —
+via the `--viewport` flag on `eval`/`screenshot` — not via a standalone
+`viewport` call followed by a separate capture. The restore step (disable +
+reload) is mandatory after any mobile scenario (research R-003-4; spec edge
+case: mobile emulation state leak).
 
 ## Invariants
 

@@ -58,9 +58,11 @@ node e2e/inspect.mjs <operation> [args] [--port <number>]
 
 | Operation | What it does | Output |
 |-----------|--------------|--------|
-| `eval <expression>` | Evaluates JS in the page context | the value as one-line JSON on stdout |
+| `eval <expression> [--viewport <WxH>] [--mobile] [--scale N]` | Evaluates JS in the page context (optionally under a viewport override applied for the call and cleared after) | the value as one-line JSON on stdout |
 | `wait <css-selector> [--timeout <ms>]` | Polls until the selector matches (default `15000` ms, `200` ms poll) | `ok: <selector> found` |
-| `screenshot <path>` | Captures a PNG (parent directories created) | the written path |
+| `screenshot <path> [--viewport <WxH>] [--mobile] [--scale N]` | Captures a PNG (parent directories created), optionally under a viewport override applied for the capture and cleared after | the written path |
+| `viewport <WxH> [--scale N] [--mobile]` | Overrides the device viewport via CDP `Emulation.setDeviceMetricsOverride` (diagnostic; the override is session-scoped — see the `usm-e2e` skill) | `ok: viewport set to <W>x<H> (…)` |
+| `viewport reset` | Clears any active viewport override | `ok: viewport override cleared` |
 
 `--port` is accepted by every operation (default `9222`, integer `1–65535`).
 Exit codes: `0` = success, `1` = operation failed (wait timeout, page

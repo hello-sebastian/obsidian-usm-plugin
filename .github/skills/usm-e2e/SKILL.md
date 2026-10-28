@@ -114,9 +114,11 @@ node e2e/inspect.mjs <operation> [args] [--port <number>]
 
 | Operation | What it does | Output |
 |-----------|--------------|--------|
-| `eval <expression>` | Evaluates JS in the page context | the value as one-line JSON on stdout |
+| `eval <expression> [--viewport <WxH>] [--mobile] [--scale N]` | Evaluates JS in the page context (optionally under a viewport override that is applied for the call and cleared after) | the value as one-line JSON on stdout |
 | `wait <css-selector> [--timeout <ms>]` | Polls until the selector matches (default `15000` ms, `200` ms poll) | `ok: <selector> found` |
-| `screenshot <path>` | Captures a PNG (parent directories created) | the written path |
+| `screenshot <path> [--viewport <WxH>] [--mobile] [--scale N]` | Captures a PNG (parent directories created), optionally under a viewport override that is applied for the capture and cleared after | the written path |
+| `viewport <WxH> [--scale N] [--mobile]` | Overrides the device viewport via CDP `Emulation.setDeviceMetricsOverride` (diagnostic; the override is session-scoped — see Mobile scenarios) | `ok: viewport set to <W>x<H> (…)` |
+| `viewport reset` | Clears any active viewport override (`Emulation.clearDeviceMetricsOverride`) | `ok: viewport override cleared` |
 
 `--port` is accepted by every operation (default `9222`, integer 1–65535).
 Exit codes: `0` = success, `1` = operation failed (wait timeout, page
@@ -150,15 +152,42 @@ documented expressions:
 
 Mobile scenarios run on the same desktop instance via Obsidian's built-in
 mobile emulation — no physical device is needed. The documented sequence is
-mandatory (the docs do not guarantee an immediate re-render, so a reload is
-required after toggling):
+mandatory. Two independent mechanisms are involved and **both** steps are
+required:
+
+- `emulateMobile(true)` switches Obsidian's **mobile UI mode** (flag + body
+  classes + workspace swap) — it does **not** resize the viewport.
+- The plugin's mobile layout is **viewport-based** (`@media (max-width: 768px)`
+  in `styles.css`) — only the viewport override (CDP
+  `Emulation.setDeviceMetricsOverride`) makes the media query match.
+
+**Why the override is applied per-call.** The CDP device-metrics override is
+**session-scoped**: it is visible target-wide while the connection that set it
+is open, and it is **cleared when that connection closes** (live-verified
+2026-10-28, Obsidian 1.14.5 / Chrome 150). A standalone `viewport` call
+(connect → set → close) therefore cannot hold the override for a later,
+separate `screenshot`/`eval` call. The `--viewport` flag on `eval` and
+`screenshot` applies the override **within the same connection as the action**
+(set before, cleared after), which is the only reliable way to capture or
+assert the mobile layout. The standalone `viewport` operation remains for
+diagnostics.
+
+`emulateMobile()` is async — state reads immediately after the toggle are
+unreliable (the body briefly carries an `in-progress` class); the reload
+before any layout assertion is required.
 
 ```bash
+# 1. Enable mobile UI mode and let it apply (reload + settle).
 node e2e/inspect.mjs eval "this.app.emulateMobile(true)"
 node e2e/inspect.mjs eval "location.reload()"
 node e2e/inspect.mjs wait ".usm-board"
-node e2e/inspect.mjs screenshot e2e/output/mobile-emulated.png
+# 2. Capture / assert the mobile layout under the viewport override
+#    (override applied for the call, cleared after).
+node e2e/inspect.mjs screenshot e2e/output/mobile-emulated.png --viewport 375x667 --mobile
+node e2e/inspect.mjs eval "JSON.stringify({isMobile: this.app.isMobile, innerWidth: window.innerWidth, colW: getComputedStyle(document.querySelector('.usm-board')).getPropertyValue('--usm-col-w')})" --viewport 375x667 --mobile
+# → {"isMobile":true,"innerWidth":375,"colW":"160px"}
 # inspect the screenshot: compact release header, full-width columns, both-axis scroll
+# ... restore (mandatory):
 node e2e/inspect.mjs eval "this.app.emulateMobile(false)"
 node e2e/inspect.mjs eval "location.reload()"
 node e2e/inspect.mjs wait ".usm-board"
@@ -166,8 +195,10 @@ node e2e/inspect.mjs eval "this.app.isMobile"   # → false
 ```
 
 The **restore step (disable + reload) is mandatory** after any mobile
-scenario — otherwise the emulated state leaks into later checks. Relaunching
-the instance also resets it.
+scenario — otherwise the emulated state leaks into later checks. The viewport
+override needs no explicit restore when applied via `--viewport` (it is
+cleared at the end of the call); if a standalone `viewport` call was used,
+run `viewport reset` as well. Relaunching the instance also resets both.
 
 ## The manual-assist protocol
 

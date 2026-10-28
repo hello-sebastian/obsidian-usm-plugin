@@ -192,11 +192,17 @@ node e2e/inspect.mjs screenshot e2e/output/extended-board.png
 ### Scenario 5 — Mobile scenario via emulation (US-003-02/FR-003-004, SC-003-007)
 
 ```bash
+# 1. Enable mobile UI mode and let it apply (reload + settle).
 node e2e/inspect.mjs eval "this.app.emulateMobile(true)"
 node e2e/inspect.mjs eval "location.reload()"
 node e2e/inspect.mjs wait ".usm-board"
-node e2e/inspect.mjs screenshot e2e/output/mobile-emulated.png
+# 2. Capture / assert the mobile layout under the viewport override
+#    (applied for the call, cleared after — the override is session-scoped).
+node e2e/inspect.mjs screenshot e2e/output/mobile-emulated.png --viewport 375x667 --mobile
+node e2e/inspect.mjs eval "JSON.stringify({isMobile: this.app.isMobile, innerWidth: window.innerWidth, colW: getComputedStyle(document.querySelector('.usm-board')).getPropertyValue('--usm-col-w')})" --viewport 375x667 --mobile
+# → {"isMobile":true,"innerWidth":375,"colW":"160px"}
 # inspect the screenshot: compact release header, full-width columns, both-axis scroll
+# ... restore (mandatory):
 node e2e/inspect.mjs eval "this.app.emulateMobile(false)"
 node e2e/inspect.mjs eval "location.reload()"
 node e2e/inspect.mjs wait ".usm-board"
@@ -204,7 +210,7 @@ node e2e/inspect.mjs eval "this.app.isMobile"
 # → false
 ```
 
-**Expected**: the mobile layout is captured while emulated; the desktop state is restored afterwards (`isMobile` is `false`) — no physical device needed (SC-003-007). The restore step is mandatory (spec edge case: mobile emulation state leak).
+**Expected**: the mobile layout is captured while emulated — the applied layout is asserted (`--usm-col-w: 160px`, release header ≤ 32 px at the 375×667 viewport), not only the `isMobile` flag; the desktop state (emulation flag) is restored afterwards (`isMobile` is `false`) — no physical device needed (SC-003-007). The restore step is mandatory (spec edge case: mobile emulation state leak). The `--viewport` override needs no explicit restore (it is cleared at the end of the call); if a standalone `viewport` call was used, run `viewport reset` as well.
 
 ### Scenario 6 — Manual-assist protocol (US-003-01, FR-003-003, FR-003-004)
 
@@ -244,6 +250,7 @@ git status --porcelain
 | `inspect.mjs` exits 2 with a connection error | No instance running, or wrong port | Run `npm run e2e:launch`; confirm the port matches. |
 | Extended board counts differ from the baseline | Fixture changed without updating the baseline | Update [extended-board-baseline.md](./contracts/extended-board-baseline.md) in the same change. |
 | `Board.md` baseline changed | The Part 1 fixture was modified | Restore it — this feature MUST NOT change the Part 1 contract. |
-| Mobile layout not applied after `emulateMobile(true)` | Missing reload | Reload the page after toggling emulation (documented sequence). |
+| Mobile layout not applied after `emulateMobile(true)` | Missing viewport override (or missing reload) | Capture/assert with `--viewport 375x667 --mobile` on the same `eval`/`screenshot` call **and** reload the page first (documented sequence) — the flag alone does not resize the viewport. |
 | `isMobile` still `true` after a scenario | Restore step skipped | Run the restore sequence (disable + reload); relaunching also resets it. |
+| Desktop checks render at mobile width | Standalone `viewport` override leaked | Run `viewport reset` (or relaunch). Note: the override is session-scoped — a standalone `viewport` call clears it when its connection closes, but a leaked override from a held connection (or a prior session) must be reset explicitly. |
 | `git status` dirty after a run | Obsidian rewrote committed test-vault config | Follow the skill's clean-tree restore steps. |
