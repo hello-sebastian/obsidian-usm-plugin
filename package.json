@@ -16,7 +16,8 @@
 		"test:perf": "vitest run tests/performance",
 		"e2e:setup": "node e2e/setup.mjs",
 		"e2e:launch": "node e2e/launch.mjs",
-		"e2e:verify": "node e2e/verify.mjs"
+		"e2e:verify": "node e2e/verify.mjs",
+		"e2e:inspect": "node e2e/inspect.mjs"
 	},
 	"keywords": [],
 	"license": "0-BSD",
