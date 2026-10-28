@@ -6,6 +6,12 @@ export default defineConfig(
 	globalIgnores([
 		'node_modules',
 		'dist',
+		// E2E tooling (002-e2e-test-env) is plain Node .mjs (Node 22+ built-ins
+		// only) and the test vault holds an installed copy of the plugin —
+		// neither is part of the TypeScript project, so the TS parser service
+		// cannot resolve them. Ignore both trees.
+		'e2e',
+		'test-vault',
 		'esbuild.config.mjs',
 		'version-bump.mjs',
 		'package_scripts/build.mjs',

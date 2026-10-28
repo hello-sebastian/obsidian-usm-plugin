@@ -7,8 +7,33 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- **Release sections** — the board now renders one `section.usm-release` per
+  release (Unassigned first), each with a horizontal header row (chevron toggle
+  + title + top divider) above its own grid, instead of a single flat 2D grid.
+- **Reserved DOM for future features** — every release header carries a visible
+  but inert chevron toggle, and story cards / header cells / release headers
+  carry invisible, inert drag handles and add/remove button slots. None respond
+  to interaction yet; they are structural placeholders for upcoming
+  collapse / drag-and-drop / add-remove features.
+
 ### Changed
 
+- **Section-based layout** — the board view was refactored from a single
+  single-grid 2D layout to a section-based layout: a sticky column-header block
+  (Activity / Task / Epic rows) pinned at the top, followed by a vertical stack
+  of release sections. The old sticky left (row) column was removed.
+- **Fixed column width** — every grid (the header block and all release grids)
+  shares an identical fixed column width driven by the `--usm-col-w` custom
+  property (240 px desktop, 160 px on small screens), so columns stay perfectly
+  aligned across the header block and every release section; long titles clamp
+  within the fixed width.
+- **Visual design (Figma reference)** — header cells render as accent-tinted
+  cards, Epic columns as light rounded containers, and story cards use the
+  design's surface/border/badge tokens. All colors come from Obsidian CSS
+  variables (no hard-coded colors), so the board renders correctly in both
+  light and dark themes and the accent adapts without a reload.
 - **Constitution v1.6.3 (PATCH)** — added the *Sequencing Gate* to the
   Logical Atomicity Protocol (*Immediate Checkpointing & Progress Tracking*):
   the agent MUST NOT begin task N+1 until task N is marked `[x]` in
