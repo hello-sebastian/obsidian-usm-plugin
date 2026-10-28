@@ -119,20 +119,19 @@ long epic title). Standard `e2e:verify` sanity pass on `Board.md`:
       `display: none`; all 16 header cells each carry a handle + slot; clicking
       a toggle leaves the section `outerHTML` unchanged (no collapse, body
       stays visible, card count unchanged).
-- [~] **Q15 part 1** — Light/dark theme switch (no reload): no hard-coded
+- [x] **Q15 part 1** — Light/dark theme switch (no reload): no hard-coded
       colors, no visual artifacts, sufficient text contrast in both themes, and
       visual parity with the Figma design (node 76:421). _(mode: subjective)_
-      Evidence: `Q15-dark.png`, `Q15-light.png` (committed)
-      Observation: pending user review — screenshots delivered; agent confirms
-      no hard-coded colors (all `var(--…)`), text readable in both themes, and
-      the accent adapts without a reload.
+      Evidence: `Q15-dark.png`, `Q15-light.png` (final-state, post padding-top:0 fix)
+      Observation: confirmed by user (2026-10-28) — no hard-coded colors (all
+      `var(--…)`), text readable in both themes, accent adapts without a reload,
+      visual parity with Figma (node 76:421) accepted.
 
 ## Result (test-vault e2e)
 
 - [x] Q11–Q14 + Q15 part 2 pass (automatable) → mark **T016** `[X]` in
       `tasks.md`.
-- [ ] Q15 part 1 pending user review → **T011** and **T019** stay open until
-      the user confirms the theme judgment.
+- [x] Q15 part 1 confirmed by user (2026-10-28) → **T011** and **T019** closed.
 - [ ] Any failure → record it here, fix, and re-run the affected scenario.
 
 ## Result
