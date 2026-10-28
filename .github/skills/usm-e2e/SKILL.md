@@ -155,6 +155,29 @@ following
 - Update the checklist **during** the session (immediately after each
   scenario), not reconstructed afterwards.
 
+## On-demand interactive sessions
+
+At any time on the developer's request — including mid-development — the agent
+serves preview and interaction requests without the developer explaining any
+infrastructure:
+
+1. **Ensure the instance is running** — `npm run e2e:launch` is idempotent;
+   re-running while an instance is up exits `0`.
+2. **Perform the operation** via `e2e/inspect.mjs` — navigation (open a note),
+   view switching, clicks, typing, mobile emulation (see the documented
+   interaction expressions above).
+3. **Deliver the result** — a screenshot (`screenshot`) and/or an evaluated
+   state (`eval`).
+4. **Iterate the development cycle** — change code → `npm run e2e:setup` →
+   `location.reload()` → inspect → screenshot — repeated without developer
+   intervention.
+
+**Non-automatable operations.** For an operation the agent cannot perform
+programmatically (e.g. a true touch gesture, or a drag & drop that cannot be
+simulated), fall back to the manual-assist protocol: ask the user to perform
+the operation in the live instance, then record the outcome in the feature's
+`checklists/manual-validation.md`.
+
 ## Known runtime side effects on the test vault
 
 Running Obsidian on the test vault can rewrite committed config files
