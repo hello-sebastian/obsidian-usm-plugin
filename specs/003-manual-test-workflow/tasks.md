@@ -135,3 +135,16 @@
 2. **Incremental delivery**: add US-02 (inspection CLI), then US-04 (on-demand), then US-03 (convention + fixture), each as a complete, independently testable increment with its own checkpoint. The skill file (`.github/skills/usm-e2e/SKILL.md`) is extended section-by-section across US-02 / US-04 / US-03, and each increment leaves it valid and usable.
 3. **Validate at every checkpoint**: use the `quickstart.md` scenarios for the story just completed; finish with the full Phase 6 validation run (all 9 scenarios).
 4. **Never touch the private vault**: every task targets `test-vault/` exclusively (FR-010, SC-003); the `002` contract (`Board.md` + `S1`–`S6`, `taskColumns: 4`) stays untouched.
+
+---
+
+## Phase 7: Convergence
+
+**Purpose**: Close the four documentation gaps found by the convergence assessment (2026-10-28). All findings are skill/contract documentation gaps discovered during the T016 live validation run; no plugin code changes are involved.
+
+- [X] T017 Document the `workspace-mobile.json` runtime side effect in the "Known runtime side effects" section of `.github/skills/usm-e2e/SKILL.md`: mobile emulation creates an untracked `test-vault/.obsidian/workspace-mobile.json` that the existing `.gitignore` entries do not cover, so it appears in `git status --porcelain` after a mobile scenario; add the path to `.gitignore` (consistent with the existing `workspace.json` entry) and document the side effect in the skill so the clean-tree check holds per FR-011, SC-005 (partial)
+- [X] T018 Replace the unreliable URI open-note expression in the "Documented interaction expressions" table of `.github/skills/usm-e2e/SKILL.md` with the reliable API method `app.workspace.getLeaf(true).openFile(app.vault.getAbstractFileByPath('<path>'))`, noting that `location.href = 'obsidian://open?path=…'` is intermittently rejected by Obsidian's vault resolver ("Vault not found"); update the same table in `specs/003-manual-test-workflow/contracts/inspect-cli.md` for consistency per FR-001, FR-013 (partial)
+- [X] T019 Document the `e2e:launch` "alive but no window" edge case in the "Environment preparation" section of `.github/skills/usm-e2e/SKILL.md`: the launch script probes only the CDP port, so if the app is alive in the background with no window it exits 0 without opening a window; document the workaround (`open -a Obsidian <test-vault path>`) so on-demand sessions can always obtain a debuggable window per FR-011, FR-013 (partial)
+- [X] T020 Add a single-board precondition note to the "Standard checks" section of `.github/skills/usm-e2e/SKILL.md`: `e2e:verify` (002, frozen) measures the active board via global DOM queries, so other board leaves (e.g. `boards/Test Board 2.md`) must be closed before running it, otherwise the combined card count fails the `taskColumns: 4` baseline per FR-001, FR-011 (partial)
+
+**Checkpoint**: All four convergence findings are documented in the skill (and the CLI contract where applicable); a fresh agent session following the skill avoids all four pitfalls discovered in the T016 run

@@ -85,7 +85,7 @@ canonical, tested way to drive the instance):
 
 | Purpose | Expression |
 |---------|------------|
-| Open a note (vault-relative path) | `location.href = 'obsidian://open?path=<path>'` |
+| Open a note (vault-relative path) | `app.workspace.getLeaf(true).openFile(app.vault.getAbstractFileByPath('<path>'))` |
 | Reload the page | `location.reload()` |
 | Switch to the map view (fallback when the view is edit/preview) | click `button[aria-label="Change view"]`, then the `.menu-item` labeled "USM board" (the same two-step sequence `e2e/verify.mjs` uses) |
 | Enable mobile emulation | `this.app.emulateMobile(true)` |
@@ -94,6 +94,10 @@ canonical, tested way to drive the instance):
 | Check the mobile flag | `this.app.isMobile` |
 | Click an element by selector | `document.querySelector('<selector>').click()` |
 | Type into an element by selector | `document.querySelector('<selector>').value = '<text>'` (followed by a dispatched `input` event where needed) |
+
+The URI form `location.href = 'obsidian://open?path=<path>'` is intermittently
+rejected by Obsidian's vault resolver ("Vault not found"); the API method
+above is the reliable open-note expression.
 
 Mobile emulation MUST be followed by a page reload for the mobile layout to
 apply, and the restore step (disable + reload) is mandatory after any mobile

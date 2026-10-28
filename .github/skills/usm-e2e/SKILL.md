@@ -40,6 +40,12 @@ npm run e2e:launch    # open a debuggable Obsidian instance on the test vault
   port (default `9222`) and waits (up to 30 s) for the CDP endpoint to be
   ready. It is **idempotent**: re-running while an instance is already up
   exits `0` without spawning a duplicate.
+- **Alive but no window**: `e2e:launch` probes only the CDP port
+  (`/json/version`), not page targets. If the app is alive in the background
+  with no window (e.g. after a previous window was closed), launch exits `0`
+  without opening a window. Open one with
+  `open -a Obsidian <absolute test-vault path>` — the port is already bound,
+  so the new window is immediately debuggable.
 - The launch **MUST** target the test vault explicitly (it passes the absolute
   `test-vault/` path to Obsidian). It never attaches to, inspects, or modifies
   a private instance.
@@ -58,6 +64,10 @@ npm run e2e:verify
 - **Baseline for `Board.md`**: `taskColumns: 4` (the `002` contract — this
   feature does not change it). A `status: "pass"` with `taskColumns: 4` and
   exit `0` is the green state.
+- **Single-board precondition**: `e2e:verify` measures the board via global
+  DOM queries, which sum every open board. Close any other board leaves
+  (e.g. `boards/Test Board 2.md`) before running it — with multiple boards
+  open, the combined card count fails the `taskColumns: 4` baseline.
 - Exit codes: `0` = pass, `1` = one or more checks failed, `2` = environment
   error before checks ran (CDP unreachable, build missing/outdated).
 
@@ -122,7 +132,7 @@ documented expressions:
 
 | Purpose | Expression |
 |---------|------------|
-| Open a note (vault-relative path) | `location.href = 'obsidian://open?path=<path>'` |
+| Open a note (vault-relative path) | `app.workspace.getLeaf(true).openFile(app.vault.getAbstractFileByPath('<path>'))` |
 | Reload the page | `location.reload()` |
 | Switch to the map view (fallback when the view is edit/preview) | click `button[aria-label="Change view"]`, then the `.menu-item` labeled "USM board" (the same two-step sequence `e2e/verify.mjs` uses) |
 | Enable mobile emulation | `this.app.emulateMobile(true)` |
@@ -131,6 +141,10 @@ documented expressions:
 | Check the mobile flag | `this.app.isMobile` |
 | Click an element by selector | `document.querySelector('<selector>').click()` |
 | Type into an element by selector | `document.querySelector('<selector>').value = '<text>'` (followed by a dispatched `input` event where needed) |
+
+> **Note**: the URI form `location.href = 'obsidian://open?path=<path>'` is
+> intermittently rejected by Obsidian's vault resolver ("Vault not found");
+> use the API method above to open notes.
 
 ### Mobile scenarios (emulation sequence)
 
@@ -212,8 +226,10 @@ the operation in the live instance, then record the outcome in the feature's
 
 Running Obsidian on the test vault can rewrite committed config files
 (formatting only — e.g. `test-vault/.obsidian/community-plugins.json` may be
-re-indented and lose its trailing newline). Before ending a session, restore
-any such side effects so the working tree is clean:
+re-indented and lose its trailing newline). Mobile emulation additionally
+creates `test-vault/.obsidian/workspace-mobile.json` (a runtime workspace
+file, gitignored — it must not be committed or restored). Before ending a
+session, restore any such side effects so the working tree is clean:
 
 ```bash
 git status --porcelain
@@ -221,7 +237,7 @@ git checkout -- test-vault/.obsidian/community-plugins.json   # if it shows as m
 ```
 
 Only committed test-vault files are ever restored this way; runtime-generated
-files (workspace, cache) are gitignored and left alone.
+files (workspace, workspace-mobile, cache) are gitignored and left alone.
 
 ## Ending a session cleanly
 
