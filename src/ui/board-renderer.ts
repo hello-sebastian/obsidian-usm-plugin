@@ -230,6 +230,13 @@ export class BoardRenderer {
 		model: GridModel,
 	): void {
 		const header = section.createDiv({ cls: 'usm-release-header' });
+		// "Unassigned" release section (FR-011): mark the header itself so
+		// the stylesheet can render a dedicated, visually distinct section
+		// (dashed top divider, muted title) without a full-box border on
+		// the title element.
+		if (releaseLabel === UNASSIGNED) {
+			header.addClass('usm-release-header--unassigned');
+		}
 		// Reserved release toggle (FR-034, R-21): a visible chevron that is
 		// structurally present but inert — no click handler, no
 		// aria-expanded, aria-hidden + tabindex=-1 so it is skipped by
@@ -301,20 +308,26 @@ export class BoardRenderer {
 		// "Unassigned" section header (FR-011): mark it so the stylesheet
 		// can render a dedicated, visually distinct section (dashed border,
 		// muted text). UNASSIGNED headers are always inert — the model never
-		// records a link path for the sentinel.
-		if (label === UNASSIGNED) {
+		// records a link path for the sentinel. The release level is handled
+		// by the release header's own modifier class (see
+		// renderReleaseHeader) so the title does not inherit a full-box
+		// dashed border.
+		if (label === UNASSIGNED && level !== 'release') {
 			headerEl.addClass('usm-header-unassigned');
 		}
+		// The label is wrapped in a span so the parent can be a flex
+		// container (vertical centering) while the span carries the
+		// ellipsis clipping.
+		const labelSpan = headerEl.createSpan({ cls: 'usm-header-label' });
+		labelSpan.setText(this.displayLabel(label));
 		if (linkPath === undefined) {
 			// Plain-text value → inert visual label.
-			headerEl.setText(this.displayLabel(label));
 			return;
 		}
 		// Wikilink value → clickable, keyboard-accessible link (FR-007).
 		headerEl.addClass('usm-header-link');
 		headerEl.setAttribute('role', 'button');
 		headerEl.setAttribute('tabindex', '0');
-		headerEl.setText(this.displayLabel(label));
 		headerEl.addEventListener('click', () => {
 			this.openLink(linkPath);
 		});
