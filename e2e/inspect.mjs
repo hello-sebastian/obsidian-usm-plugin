@@ -2,7 +2,7 @@
 /**
  * e2e/inspect.mjs — Ad-hoc inspection CLI for the E2E test environment.
  *
- * Part of feature specs/003-manual-test-workflow (US-02 / FR-005…FR-007).
+ * Part of feature specs/002-e2e-test-env (US-003-02 / FR-003-005…FR-003-007).
  *
  * A thin CLI over the existing CDP client (./cdp.mjs). It introduces no new
  * external dependencies (Node 22+ built-ins only).
@@ -26,7 +26,7 @@
  *      port, invalid arguments). Every environment error includes the hint
  *      "(run npm run e2e:launch)".
  *
- * Contract: specs/003-manual-test-workflow/contracts/inspect-cli.md
+ * Contract: specs/002-e2e-test-env/contracts/inspect-cli.md
  */
 
 import { connect } from './cdp.mjs';

@@ -2,10 +2,10 @@
 /**
  * e2e/cdp.mjs — Minimal Chrome DevTools Protocol (CDP) client.
  *
- * Part of the E2E test environment (specs/002-e2e-test-env, US-03 / FR-016).
+ * Part of the E2E test environment (specs/002-e2e-test-env, US-002-03 / FR-002-016).
  *
  * Uses ONLY Node built-ins (global `fetch` + global `WebSocket`, Node 22+) —
- * no NPM dependencies (research.md R4). It exposes the small, fixed set of
+ * no NPM dependencies (research.md R-002-4). It exposes the small, fixed set of
  * operations the verification script and the agent need:
  *
  *   - probe(port)        → GET /json/version (readiness probe) → info | null

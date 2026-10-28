@@ -2,13 +2,13 @@
 /**
  * e2e/verify.mjs — Automated visual & DOM verification over CDP.
  *
- * Part of the E2E test environment (specs/002-e2e-test-env, US-03 /
- * FR-010…FR-014, FR-016). Connects to a running, debuggable Obsidian
+ * Part of the E2E test environment (specs/002-e2e-test-env, US-002-03 /
+ * FR-002-010…FR-002-014, FR-002-016). Connects to a running, debuggable Obsidian
  * instance (launched by `e2e:launch`), opens the board in map view, runs the
  * standard checks, and emits a machine-readable JSON report
  * (contracts/verification-report.md).
  *
- * Uses ONLY Node built-ins (Node 22+) — no NPM dependencies (research.md R4).
+ * Uses ONLY Node built-ins (Node 22+) — no NPM dependencies (research.md R-002-4).
  * The CDP transport is the minimal client in `./cdp.mjs`.
  *
  * Invocation:
@@ -35,7 +35,7 @@ const PLUGIN_DIR = join(TEST_VAULT, '.obsidian', 'plugins', PLUGIN_ID);
 const DEFAULT_PORT = 9222;
 const BOARD_WAIT_MS = 15_000; // bounded wait for .usm-board to render
 const BOARD_POLL_MS = 200;
-const REACTIVITY_BOUND_MS = 5000; // SC-006 reactivity bound
+const REACTIVITY_BOUND_MS = 5000; // SC-002-006 reactivity bound
 const REACTIVITY_POLL_MS = 100;
 const OUTPUT_DIR = join(REPO_ROOT, 'e2e', 'output');
 const SCREENSHOT_REL = 'e2e/output/board.png';
@@ -115,11 +115,11 @@ async function waitForSelector(session, selector, timeoutMs) {
 }
 
 /**
- * Open the board in map view (FR-010).
+ * Open the board in map view (FR-002-010).
  *
  * Opens the `Board.md` note via the Obsidian API
  * (`app.workspace.getLeaf(true).openFile(app.vault.getAbstractFileByPath('Board.md'))`)
- * — the reliable method documented in the `usm-e2e` skill (T017). The
+ * — the reliable method documented in the `usm-e2e` skill (T002-017). The
  * `obsidian://open?path=…` URI form is intermittently rejected ("Vault not
  * found") and is kept only as a secondary fallback. The plugin's routing
  * (`usm-view: map` frontmatter) then renders the board in map view. If the
@@ -130,7 +130,7 @@ async function waitForSelector(session, selector, timeoutMs) {
  * Throws when `.usm-board` is not present after the bounded wait.
  */
 async function openBoardInMapView(session) {
-	// Primary: open the board note via the Obsidian API (reliable, T017).
+	// Primary: open the board note via the Obsidian API (reliable, T002-017).
 	// The path is vault-relative. `openFile` is async — `evaluate` awaits it.
 	await session.evaluate(`
 		(() => {
@@ -153,7 +153,7 @@ async function openBoardInMapView(session) {
 	}
 
 	// Fallback: the view may be edit/preview. Switch to map view via the
-	// dedicated view-switch button (FR-010).
+	// dedicated view-switch button (FR-002-010).
 	const openedMenu = await session.evaluate(`
 		(() => {
 			const btn = document.querySelector('button[aria-label="Change view"]');
@@ -183,7 +183,7 @@ async function openBoardInMapView(session) {
 }
 
 /**
- * Single-board precondition (T015, FR-011, SC-004).
+ * Single-board precondition (T002-015, FR-002-011, SC-002-004).
  *
  * The standard checks use global `document.querySelectorAll` calls. They are
  * only correct when exactly one `.usm-board` is present in the DOM. With
@@ -214,7 +214,7 @@ function failedCheck(id, name, expected, detail) {
 }
 
 /**
- * Check 1 (FR-011, SC-004): count the task columns.
+ * Check 1 (FR-002-011, SC-002-004): count the task columns.
  * Counts `.usm-board-header .usm-header-cell--task` elements; expected 4
  * (contracts/test-vault-structure.md).
  */
@@ -233,7 +233,7 @@ async function checkTaskColumns(session) {
 }
 
 /**
- * Check 2 (FR-012, SC-005): capture a screenshot of the map.
+ * Check 2 (FR-002-012, SC-002-005): capture a screenshot of the map.
  * Writes the PNG to e2e/output/board.png.
  */
 async function checkScreenshot(session) {
@@ -250,7 +250,7 @@ async function checkScreenshot(session) {
 }
 
 /**
- * Check 3 (FR-013, SC-006): the map reacts to a source change.
+ * Check 3 (FR-002-013, SC-002-006): the map reacts to a source change.
  * Records the baseline card count, appends a new story link to Board.md,
  * polls the card count until it changes or the 5000 ms bound elapses,
  * records the delay, then restores Board.md to its committed content so the
@@ -286,7 +286,7 @@ async function checkReactivity(session) {
 			await sleep(REACTIVITY_POLL_MS);
 		}
 	} finally {
-		// Always restore the fixture (FR-013, reproducibility).
+		// Always restore the fixture (FR-002-013, reproducibility).
 		writeFileSync(boardPath, original);
 	}
 
@@ -325,7 +325,7 @@ function buildReport(port, checks, taskColumns, screenshot, reactivity, errors) 
 }
 
 /**
- * Write the report to e2e/output/report.json and print it to stdout (FR-014).
+ * Write the report to e2e/output/report.json and print it to stdout (FR-002-014).
  * Returns the report object.
  */
 function emitReport(port, checks, taskColumns, screenshot, reactivity, errors) {
@@ -394,7 +394,7 @@ async function main() {
 
 	console.log('✔ Board opened in map view (.usm-board present).');
 
-	// Single-board precondition (T015): the standard checks use global DOM
+	// Single-board precondition (T002-015): the standard checks use global DOM
 	// queries; they are only correct with exactly one .usm-board in the DOM.
 	try {
 		await assertSingleBoard(session);
@@ -403,14 +403,14 @@ async function main() {
 		emitEnvError(port, err.message);
 	}
 
-	// Run the standard checks (T011) and collect the top-level report fields.
+	// Run the standard checks (T002-011) and collect the top-level report fields.
 	const checks = [];
 	const errors = [];
 	let taskColumns = null;
 	let screenshot = null;
 	let reactivity = { detected: false, delayMs: null, boundMs: REACTIVITY_BOUND_MS };
 
-	// Check 1: task-columns (FR-011, SC-004).
+	// Check 1: task-columns (FR-002-011, SC-002-004).
 	try {
 		const c = await checkTaskColumns(session);
 		checks.push(c);
@@ -420,7 +420,7 @@ async function main() {
 		errors.push(`task-columns: ${err.message}`);
 	}
 
-	// Check 2: screenshot (FR-012, SC-005).
+	// Check 2: screenshot (FR-002-012, SC-002-005).
 	try {
 		const c = await checkScreenshot(session);
 		checks.push(c);
@@ -432,7 +432,7 @@ async function main() {
 		errors.push(`screenshot: ${err.message}`);
 	}
 
-	// Check 3: reactivity (FR-013, SC-006).
+	// Check 3: reactivity (FR-002-013, SC-002-006).
 	try {
 		const { check, reactivity: r } = await checkReactivity(session);
 		checks.push(check);
@@ -446,7 +446,7 @@ async function main() {
 
 	session.close();
 
-	// Emit the JSON report and set the exit code (T012, FR-014):
+	// Emit the JSON report and set the exit code (T002-012, FR-002-014):
 	// 0 = pass, 1 = one or more checks failed.
 	const report = emitReport(port, checks, taskColumns, screenshot, reactivity, errors);
 	process.exit(report.status === 'pass' ? 0 : 1);

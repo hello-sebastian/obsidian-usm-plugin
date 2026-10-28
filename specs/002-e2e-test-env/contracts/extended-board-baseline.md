@@ -1,21 +1,21 @@
 # Contract: Extended Board Fixture & Verification Baseline
 
-**Feature**: `003-manual-test-workflow` | **Date**: 2026-10-28
+**Feature**: `002-e2e-test-env` (consolidated with `003-manual-test-workflow`) | **Date**: 2026-10-28
 
 Defines the committed layout of the extended board fixture in `test-vault/`
 and the fixed rendered structure that serves as its verification baseline
-(FR-009, US-03 scenario 2). The fixture is the "Test Board 2" board previously
+(FR-003-009, US-003-03 scenario 2). The fixture is the "Test Board 2" board previously
 used for the Iteration 2 layout checks (Q11–Q14); it is recreated from that
 documented baseline because the original lives in the user's private vault,
-which the workflow must never read (FR-010, research R5).
+which the workflow must never read (FR-003-010, research R-003-5).
 
 ## Directory layout
 
 ```text
 test-vault/
-├── Board.md                  # unchanged — the 002 standard-verify target
+├── Board.md                  # unchanged — the Part 1 standard-verify target
 ├── S1.md … S6.md             # unchanged
-└── boards/                   # NEW — separate-folder arrangement (FR-009)
+└── boards/                   # NEW — separate-folder arrangement (FR-003-009)
     ├── Test Board 2.md       # the extended board fixture
     └── T1.md … T8.md         # its story notes (names distinct from S1–S6)
 ```
@@ -24,7 +24,7 @@ test-vault/
 extended board's story notes MUST use names that do not collide with the root
 `S1`–`S6` set. `T1`–`T8` are the canonical names. Reusing `S1`–`S8` would make
 the two boards share notes and would make cross-board interference
-untestable (FR-009, US-03 scenario 5).
+untestable (FR-003-009, US-003-03 scenario 5).
 
 ## Board file (`boards/Test Board 2.md`)
 
@@ -75,20 +75,20 @@ Task column breakdown (Activity → Task):
 Release sections (rendered order): `Unassigned` (auto-generated, always first),
 then the assigned releases in appearance order: `1.0 MVP`, `2.0`, `3.0`.
 
-## Multi-board coexistence baseline (FR-009, US-03 scenario 5)
+## Multi-board coexistence baseline (FR-003-009, US-003-03 scenario 5)
 
 With both boards present in the vault:
 
 | Board | Expected when opened in map view |
 |-------|----------------------------------|
-| `Board.md` | the `002` baseline — `taskColumns: 4`, 8 cards (unchanged by this feature) |
+| `Board.md` | the Part 1 baseline — `taskColumns: 4`, 8 cards (unchanged by this feature) |
 | `boards/Test Board 2.md` | the extended baseline above — 4 release sections, 9 cards |
 
 Opening each board in turn (and switching back and forth) MUST reproduce its
 own baseline with no cross-board interference. The `usm-view` frontmatter
 attribute is per-file, so view state cannot leak between boards.
 
-## Same-folder arrangement (ad-hoc, R6)
+## Same-folder arrangement (ad-hoc, R-003-6)
 
 The committed vault uses the separate-folder arrangement. The same-folder
 arrangement is verified ad-hoc: create a variant board file in the vault root
@@ -102,9 +102,9 @@ restore a clean tree. This step is documented in the skill and in
 - **Reproducibility**: a fresh clone + `npm run e2e:setup` yields this exact
   structure.
 - **Isolation**: nothing outside `test-vault/` is read or modified during a
-  run (SC-003).
+  run (SC-003-003).
 - **Baseline stability**: changing any fixture file changes the baseline and
   MUST update this contract in the same change (spec edge case: fixture
   drift).
-- **002 contract untouched**: `Board.md`, `S1`–`S6`, and the
-  `002` test-vault-structure contract are not modified by this feature.
+- **Part 1 contract untouched**: `Board.md`, `S1`–`S6`, and the
+  Part 1 test-vault-structure contract are not modified by this feature.

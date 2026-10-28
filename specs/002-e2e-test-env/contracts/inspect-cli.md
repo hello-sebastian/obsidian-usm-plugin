@@ -1,9 +1,9 @@
 # Contract: Ad-Hoc Inspection CLI (`e2e/inspect.mjs`)
 
-**Feature**: `003-manual-test-workflow` | **Date**: 2026-10-28
+**Feature**: `002-e2e-test-env` (consolidated with `003-manual-test-workflow`) | **Date**: 2026-10-28
 
-Defines the command-line interface of the ad-hoc inspection helper (FR-005,
-FR-006, FR-007, US-02). The helper is a thin CLI over the existing CDP client
+Defines the command-line interface of the ad-hoc inspection helper (FR-003-005,
+FR-003-006, FR-003-007, US-003-02). The helper is a thin CLI over the existing CDP client
 (`e2e/cdp.mjs`); it introduces no new external dependencies (Node 22+
 built-ins only).
 
@@ -61,7 +61,7 @@ directories are created as needed).
 
 ```bash
 node e2e/inspect.mjs screenshot e2e/output/board.png
-node e2e/inspect.mjs screenshot specs/003-manual-test-workflow/checklists/M3-mobile-layout.png
+node e2e/inspect.mjs screenshot specs/002-e2e-test-env/checklists/M3-mobile-layout.png
 ```
 
 - Prints the written path and exits `0`.
@@ -76,7 +76,7 @@ node e2e/inspect.mjs screenshot specs/003-manual-test-workflow/checklists/M3-mob
 | `2` | Environment error before the operation ran: no CDP instance on the port, invalid arguments. |
 
 Every environment error message MUST include the hint
-`(run npm run e2e:launch)` (FR-006).
+`(run npm run e2e:launch)` (FR-003-006).
 
 ## Documented interaction expressions
 
@@ -101,14 +101,14 @@ above is the reliable open-note expression.
 
 Mobile emulation MUST be followed by a page reload for the mobile layout to
 apply, and the restore step (disable + reload) is mandatory after any mobile
-scenario (research R4; spec edge case: mobile emulation state leak).
+scenario (research R-003-4; spec edge case: mobile emulation state leak).
 
 ## Invariants
 
-- **No new dependencies (FR-007)**: the file imports only `node:` built-ins
+- **No new dependencies (FR-003-007)**: the file imports only `node:` built-ins
   and `./cdp.mjs`.
-- **Fail-fast (FR-006)**: no operation may hang; every bounded wait has a
+- **Fail-fast (FR-003-006)**: no operation may hang; every bounded wait has a
   timeout, and every connection failure produces an actionable error.
 - **Read-only by default**: the helper performs whatever the expression does;
   the *skill* is responsible for prescribing safe expressions and the
-  clean-tree restore steps (FR-011).
+  clean-tree restore steps (FR-003-011).

@@ -1,8 +1,8 @@
 # Contract: Test Vault Structure & Verification Baseline
 
-**Feature**: `002-e2e-test-env` | **Date**: 2026-10-27
+**Feature**: `002-e2e-test-env` (consolidated with `003-manual-test-workflow`) | **Date**: 2026-10-27
 
-Defines the committed layout of `test-vault/` and the fixed board structure that serves as the verification baseline (SC-004, Assumption "Known verification baseline").
+Defines the committed layout of `test-vault/` and the fixed board structure that serves as the verification baseline (SC-002-004, Assumption "Known verification baseline").
 
 ## Directory layout
 
@@ -72,6 +72,6 @@ Release rows (rendered order): `Unassigned` (auto-generated, always rendered fir
 
 ## Invariants
 
-- **Reproducibility (FR-004)**: a fresh clone + `npm run e2e:setup` yields this exact structure.
-- **Isolation (SC-002)**: nothing outside `test-vault/` is read or modified during a run.
+- **Reproducibility (FR-002-004)**: a fresh clone + `npm run e2e:setup` yields this exact structure.
+- **Isolation (SC-002-002)**: nothing outside `test-vault/` is read or modified during a run.
 - **Baseline stability**: changing any fixture file changes the baseline and MUST update this contract in the same change.

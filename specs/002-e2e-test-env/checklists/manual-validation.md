@@ -1,6 +1,6 @@
 # Manual Validation Checklist — Manual Test & Preview Workflow (E2E Infrastructure Integration)
 
-**Feature**: `003-manual-test-workflow` | **Tasks**: T004, T007, T009, T011, T014
+**Feature**: `002-e2e-test-env` (consolidated with `003-manual-test-workflow`) | **Tasks**: T003-004, T003-007, T003-009, T003-011, T003-014
 
 ## Setup (once)
 

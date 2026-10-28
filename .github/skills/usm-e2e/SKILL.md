@@ -61,7 +61,7 @@ npm run e2e:verify
 - Connects over CDP, opens `Board.md` in the map view, runs the standard
   checks, and writes a machine-readable JSON report to
   `e2e/output/report.json` (plus a screenshot at `e2e/output/board.png`).
-- **Baseline for `Board.md`**: `taskColumns: 4` (the `002` contract — this
+- **Baseline for `Board.md`**: `taskColumns: 4` (the Part 1 contract — this
   feature does not change it). A `status: "pass"` with `taskColumns: 4` and
   exit `0` is the green state.
 - **Single-board precondition**: `e2e:verify` measures the board via global
@@ -74,9 +74,9 @@ npm run e2e:verify
 ## Test vault fixtures
 
 The committed `test-vault/` holds two boards that coexist and each render its
-own structure independently (FR-009):
+own structure independently (FR-003-009):
 
-- **`Board.md`** (root) — the `002` standard-verify target: `taskColumns: 4`,
+- **`Board.md`** (root) — the Part 1 standard-verify target: `taskColumns: 4`,
   8 cards. Unchanged by this feature.
 - **`boards/Test Board 2.md`** — the extended board fixture, with its story
   notes `boards/T1.md`–`T8.md` (names distinct from the root `S1`–`S6` so the
@@ -84,7 +84,7 @@ own structure independently (FR-009):
   first, then `1.0 MVP`, `2.0`, `3.0`), 9 cards (8 notes + 1 duplicate `T1`),
   6 task columns, 4 activity columns, and a long epic title that clamps within
   the fixed column width. See
-  `specs/003-manual-test-workflow/contracts/extended-board-baseline.md` for the
+  `specs/002-e2e-test-env/contracts/extended-board-baseline.md` for the
   full baseline and the per-leaf measurement method.
 
 **Multi-board coexistence.** With both boards present, opening each in turn
@@ -183,7 +183,7 @@ scenario into exactly one mode and behave accordingly:
 **Recording outcomes.** Outcomes are recorded in the feature's manual
 validation checklist at `specs/<feature>/checklists/manual-validation.md`,
 following
-`specs/003-manual-test-workflow/contracts/manual-checklist-format.md`:
+`specs/002-e2e-test-env/contracts/manual-checklist-format.md`:
 
 - Each scenario entry has an id (`M1`, `M2`, …), a title, a mode, a status
   marker, evidence, and a one-line observation.

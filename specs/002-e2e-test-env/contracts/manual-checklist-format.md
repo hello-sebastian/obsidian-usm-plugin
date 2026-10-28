@@ -1,9 +1,9 @@
 # Contract: Manual Validation Checklist Format
 
-**Feature**: `003-manual-test-workflow` | **Date**: 2026-10-28
+**Feature**: `002-e2e-test-env` (consolidated with `003-manual-test-workflow`) | **Date**: 2026-10-28
 
 Defines the format of the per-feature manual validation checklist that records
-manual-assist verification outcomes (FR-003, FR-004, Key Entities: "Manual
+manual-assist verification outcomes (FR-003-003, FR-003-004, Key Entities: "Manual
 validation checklist" and "Verification result record").
 
 ## File location
@@ -15,7 +15,7 @@ specs/<feature>/checklists/manual-validation.md
 ```
 
 Committed screenshots referenced by the checklist live in the same directory
-(R7 hybrid rule).
+(R-003-7 hybrid rule).
 
 ## File structure
 
@@ -52,7 +52,7 @@ Committed screenshots referenced by the checklist live in the same directory
 |-------|------|
 | Scenario id | `M1`, `M2`, … — unique within the file, stable once assigned. |
 | Title | One short sentence naming the verified behavior. |
-| Mode | Exactly one of `automatable`, `subjective`, `live interaction` (FR-004). Mobile scenarios are `automatable` (run via emulation). |
+| Mode | Exactly one of `automatable`, `subjective`, `live interaction` (FR-003-004). Mobile scenarios are `automatable` (run via emulation). |
 | Status marker | `[ ]` pending · `[x]` pass · `[!]` fail · `[~]` pending user review. |
 | Evidence | A path: committed screenshots are relative to the checklist file (e.g. `M2-aesthetics.png`); automated evidence is named as `e2e/output/…` (gitignored, reproducible on demand). |
 | Observation | One line: the agent's observation (automatable) or the user's judgment (subjective / live interaction). A `fail` entry MUST name the observed defect. |
@@ -71,7 +71,7 @@ Committed screenshots referenced by the checklist live in the same directory
   scenarios without the user's recorded judgment (spec edge case: user
   unavailable → `[~]`, never a guess).
 
-## Screenshot persistence (hybrid rule, R7)
+## Screenshot persistence (hybrid rule, R-003-7)
 
 | Kind | Location | Committed? |
 |------|----------|------------|

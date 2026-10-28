@@ -2,7 +2,7 @@
 /**
  * e2e/setup.mjs — Build the plugin and install it into the isolated test vault.
  *
- * Part of the E2E test environment (specs/002-e2e-test-env, US-01 / FR-005).
+ * Part of the E2E test environment (specs/002-e2e-test-env, US-002-01 / FR-002-005).
  *
  * What it does:
  *   1. Runs `npm run build` (tsc type check + esbuild production bundle).

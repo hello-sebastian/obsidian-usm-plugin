@@ -3,22 +3,22 @@
  * e2e/launch.mjs — Open Obsidian on the isolated test vault with a CDP
  * remote-debugging port.
  *
- * Part of the E2E test environment (specs/002-e2e-test-env, US-02 / FR-006…FR-009).
+ * Part of the E2E test environment (specs/002-e2e-test-env, US-002-02 / FR-002-006…FR-002-009).
  *
  * What it does (per contracts/launch-cli.md):
  *   1. Parses `--port <number>` (default 9222).
  *   2. Pre-flight build check: the test vault's `main.js` must exist and its
  *      `manifest.json` version must equal the repository `manifest.json`
  *      version. On failure, prints `run npm run e2e:setup` and exits non-zero
- *      (FR-015, SC-008).
+ *      (FR-002-015, SC-002-008).
  *   3. Idempotency probe: `fetch http://127.0.0.1:<port>/json/version` with a
  *      short timeout. If it responds, prints "Instance already available on
- *      port <port>" and exits 0 without launching (FR-007, SC-007).
+ *      port <port>" and exits 0 without launching (FR-002-007, SC-002-007).
  *   4. Launches Obsidian on the test vault:
  *        open -a Obsidian --args --remote-debugging-port=<port> <absolute test-vault path>
  *      The vault path is passed explicitly so the instance always targets the
  *      test vault, never a private vault (spec edge case).
- *   5. Bounded readiness poll of `/json/version` (<= 30 s, SC-003).
+ *   5. Bounded readiness poll of `/json/version` (<= 30 s, SC-002-003).
  *   6. Port-conflict detection: if the port is bound but does not serve a CDP
  *      endpoint after launch, prints an actionable error suggesting
  *      `--port <alternate>` and exits non-zero (spec edge case).
@@ -40,7 +40,7 @@ const TEST_VAULT = join(REPO_ROOT, 'test-vault');
 const PLUGIN_DIR = join(TEST_VAULT, '.obsidian', 'plugins', PLUGIN_ID);
 
 const DEFAULT_PORT = 9222;
-const READINESS_TIMEOUT_MS = 30_000; // SC-003 bounded wait
+const READINESS_TIMEOUT_MS = 30_000; // SC-002-003 bounded wait
 const READINESS_POLL_MS = 500;
 const PROBE_TIMEOUT_MS = 2_000;
 
@@ -142,7 +142,7 @@ async function waitForReady(port) {
 }
 
 /**
- * Bounded poll for a CDP page target to appear (windowless recovery, T016).
+ * Bounded poll for a CDP page target to appear (windowless recovery, T002-016).
  * Returns true when at least one page target is listed, else false.
  */
 async function waitForPageTarget(port) {
@@ -159,11 +159,11 @@ async function waitForPageTarget(port) {
 
 const port = parsePort(process.argv.slice(2));
 
-// Step 1: pre-flight build check (FR-015, SC-008).
+// Step 1: pre-flight build check (FR-002-015, SC-002-008).
 const version = checkBuild();
 console.log(`✔ Plugin build current in the test vault (version ${version}).`);
 
-// Step 2: idempotency probe (FR-007, SC-007).
+// Step 2: idempotency probe (FR-002-007, SC-002-007).
 const existing = await probeCdp(port);
 if (isCdpInfo(existing)) {
 	const targets = await listTargets(port);
@@ -171,7 +171,7 @@ if (isCdpInfo(existing)) {
 		console.log(`Instance already available on port ${port}`);
 		process.exit(0);
 	}
-	// Alive but windowless (T016): the app is running in the background with
+	// Alive but windowless (T002-016): the app is running in the background with
 	// no window, so there are no page targets to attach to. Open the test
 	// vault window, then wait for a page target to appear instead of exiting 0.
 	console.log(`→ Instance alive on port ${port} but no window — opening the test vault…`);
@@ -191,7 +191,7 @@ if (isCdpInfo(existing)) {
 	);
 }
 
-// Step 3: launch Obsidian on the test vault (FR-006).
+// Step 3: launch Obsidian on the test vault (FR-002-006).
 console.log(`→ Launching Obsidian on the test vault (port ${port})…`);
 console.log(`  vault: ${TEST_VAULT}`);
 const launch = spawnSync(
@@ -203,7 +203,7 @@ if (launch.status !== 0) {
 	fail(`open exited with code ${launch.status ?? 'unknown'} — could not launch Obsidian.`);
 }
 
-// Step 4: bounded readiness poll (SC-003).
+// Step 4: bounded readiness poll (SC-002-003).
 console.log(`→ Waiting for the CDP endpoint (up to ${READINESS_TIMEOUT_MS / 1000} s)…`);
 const ready = await waitForReady(port);
 if (ready) {

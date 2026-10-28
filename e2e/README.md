@@ -3,7 +3,8 @@
 An isolated, reproducible environment for exercising the User Story Map plugin
 in a real Obsidian instance and verifying it automatically over the Chrome
 DevTools Protocol (CDP). It is part of feature
-[`002-e2e-test-env`](../specs/002-e2e-test-env/spec.md).
+[`002-e2e-test-env`](../specs/002-e2e-test-env/spec.md) (consolidated with
+`003-manual-test-workflow`).
 
 Everything here is **Node built-ins only** (Node 22+) — no extra NPM
 dependencies. The CDP transport is a minimal client in [`cdp.mjs`](./cdp.mjs).
@@ -14,7 +15,7 @@ dependencies. The CDP transport is a minimal client in [`cdp.mjs`](./cdp.mjs).
 - **Node.js 22+** — the verification script uses the global `WebSocket`.
 - A clean checkout of the repository.
 - **No private vault is touched.** Every command targets the committed
-  `test-vault/` fixture vault explicitly (SC-002).
+  `test-vault/` fixture vault explicitly (SC-002-002).
 
 ## The three commands
 
@@ -72,16 +73,16 @@ inspection, the manual-assist protocol, mobile emulation, and on-demand
 preview — is documented in the
 [`usm-e2e` skill](../.github/skills/usm-e2e/SKILL.md). The runnable end-to-end
 scenarios are in
-[`specs/003-manual-test-workflow/quickstart.md`](../specs/003-manual-test-workflow/quickstart.md).
+[`specs/002-e2e-test-env/quickstart.md`](../specs/002-e2e-test-env/quickstart.md).
 
 ## CDP endpoints
 
-Once `e2e:launch` succeeds, the instance serves (FR-009):
+Once `e2e:launch` succeeds, the instance serves (FR-002-009):
 
 - `http://127.0.0.1:<port>/json/version` — browser/version info (readiness probe).
 - `http://127.0.0.1:<port>/json` — list of page targets, each with a
   `webSocketDebuggerUrl` used by the verification script and by an agent's
-  ad-hoc CDP inspection (FR-017).
+  ad-hoc CDP inspection (FR-002-017).
 
 ## Output
 

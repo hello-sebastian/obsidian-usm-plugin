@@ -1,9 +1,9 @@
 # Contract: Manual-Test Task-Writing Convention
 
-**Feature**: `003-manual-test-workflow` | **Date**: 2026-10-28
+**Feature**: `002-e2e-test-env` (consolidated with `003-manual-test-workflow`) | **Date**: 2026-10-28
 
 Defines how manual-verification tasks are written in future iterations'
-`tasks.md` files (FR-008, US-03 scenario 1). The convention is pointed to
+`tasks.md` files (FR-003-008, US-003-03 scenario 1). The convention is pointed to
 from `AGENTS.md` so that task authors (agents) see it before writing tasks.
 
 ## Rule
@@ -16,11 +16,11 @@ A manual-verification task in `tasks.md` MUST:
 2. **Name the checklist file and section to update** — e.g. "update
    `specs/<feature>/checklists/manual-validation.md`, scenario M3".
 3. **Mark the scenario mode** — exactly one of `automatable`, `subjective`,
-   `live interaction` (FR-004). Mobile scenarios are `automatable` (run via
+   `live interaction` (FR-003-004). Mobile scenarios are `automatable` (run via
    mobile emulation).
 4. **Target the test vault** — the task MUST be executable entirely within
    `test-vault/`; it MUST NOT reference the private vault or the `deploy`
-   path (FR-010).
+   path (FR-003-010).
 
 ## Task template
 
@@ -46,7 +46,7 @@ Automatable (agent runs it end-to-end):
   - Fixture: `test-vault/boards/Test Board 2.md`.
   - Checklist: update `specs/004-…/checklists/manual-validation.md`, scenario M1.
   - Expected: 4 release sections (Unassigned first), 9 cards, long epic title
-    clamped — per `specs/003-manual-test-workflow/contracts/extended-board-baseline.md`.
+    clamped — per `specs/002-e2e-test-env/contracts/extended-board-baseline.md`.
 ```
 
 Subjective (user judgment required):
