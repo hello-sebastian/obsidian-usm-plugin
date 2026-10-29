@@ -173,6 +173,14 @@ the versioned fixtures in `tests/fixtures/`.
 The plugin operates 100% locally. It makes no network requests, collects no
 telemetry, and never sends vault content or note metadata anywhere.
 
+
 ## License
 
-[0-BSD](LICENSE)
+USM Obsidian Plugin
+Copyright (C) 2026 Sebastian Sikora
+https://github.com/hello-sebastian/usm-obsidian-plugin
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
